@@ -277,6 +277,8 @@ class _ItemDetailSheet extends StatefulWidget {
 
 class _ItemDetailSheetState extends State<_ItemDetailSheet> {
   bool _isPrinting = false;
+  bool _isPreviewing = false;
+  Uint8List? _previewImage;
 
   @override
   Widget build(BuildContext context) {
@@ -328,6 +330,23 @@ class _ItemDetailSheetState extends State<_ItemDetailSheet> {
                 const Divider(),
                 const SizedBox(height: 16),
                 Text(item.description, style: const TextStyle(fontSize: 15, height: 1.5)),
+                
+                // B&W Preview
+                if (_previewImage != null) ...[
+                  const SizedBox(height: 16),
+                  const Divider(),
+                  const SizedBox(height: 8),
+                  const Text('Print Preview (B&W)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  const SizedBox(height: 8),
+                  Container(
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey),
+                      color: Colors.white,
+                    ),
+                    child: Image.memory(_previewImage!, filterQuality: FilterQuality.none),
+                  ),
+                ],
+                
                 const SizedBox(height: 80),
               ],
             ),
@@ -335,20 +354,57 @@ class _ItemDetailSheetState extends State<_ItemDetailSheet> {
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.all(16.0),
-              child: SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: ElevatedButton.icon(
-                  onPressed: widget.bluetooth.currentState == BleConnectionState.connected && !_isPrinting ? _printItem : null,
-                  icon: _isPrinting ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.print, size: 28),
-                  label: Text(_isPrinting ? 'Printing...' : 'Print Item Card', style: const TextStyle(fontSize: 18)),
-                ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: SizedBox(
+                      height: 56,
+                      child: OutlinedButton.icon(
+                        onPressed: _isPreviewing ? null : _togglePreview,
+                        icon: _isPreviewing
+                            ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                            : Icon(_previewImage != null ? Icons.close : Icons.visibility),
+                        label: Text(_previewImage != null ? 'Hide' : 'Preview'),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    flex: 2,
+                    child: SizedBox(
+                      height: 56,
+                      child: ElevatedButton.icon(
+                        onPressed: widget.bluetooth.currentState == BleConnectionState.connected && !_isPrinting ? _printItem : null,
+                        icon: _isPrinting ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.print, size: 24),
+                        label: Text(_isPrinting ? 'Printing...' : 'Print', style: const TextStyle(fontSize: 16)),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _togglePreview() async {
+    if (_previewImage != null) {
+      setState(() => _previewImage = null);
+      return;
+    }
+    
+    setState(() => _isPreviewing = true);
+    try {
+      final imageBytes = await _generateItemCard(widget.item);
+      final preview = ImageProcessor.createPreview(imageBytes);
+      setState(() => _previewImage = preview);
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Preview error: $e')));
+    } finally {
+      setState(() => _isPreviewing = false);
+    }
   }
 
   Future<void> _printItem() async {

@@ -4,9 +4,7 @@ import '../services/bluetooth_service.dart';
 import '../widgets/printer_dialog.dart';
 import 'photo_print_screen.dart';
 import 'momir_screen.dart';
-import 'spells_screen.dart';
-import 'monsters_screen.dart';
-import 'magic_items_screen.dart';
+import 'dnd_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -112,25 +110,11 @@ class _HomeScreenState extends State<HomeScreen> {
                     onTap: () => _navigateToMode('momir'),
                   ),
                   _ModeCard(
-                    title: 'D&D Spells',
-                    subtitle: '339 spells',
-                    icon: Icons.auto_stories,
+                    title: 'D&D',
+                    subtitle: 'Spells • Monsters • Items',
+                    icon: Icons.menu_book,
                     color: Colors.deepOrange,
-                    onTap: () => _navigateToMode('spells'),
-                  ),
-                  _ModeCard(
-                    title: 'Monsters',
-                    subtitle: '327 creatures',
-                    icon: Icons.pets,
-                    color: Colors.red,
-                    onTap: () => _navigateToMode('monsters'),
-                  ),
-                  _ModeCard(
-                    title: 'Magic Items',
-                    subtitle: '241 items',
-                    icon: Icons.diamond,
-                    color: Colors.amber,
-                    onTap: () => _navigateToMode('items'),
+                    onTap: () => _navigateToMode('dnd'),
                   ),
                 ],
               ),
@@ -161,22 +145,10 @@ class _HomeScreenState extends State<HomeScreen> {
           MaterialPageRoute(builder: (context) => const MomirScreen()),
         );
         break;
-      case 'spells':
+      case 'dnd':
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => const SpellsScreen()),
-        );
-        break;
-      case 'monsters':
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const MonstersScreen()),
-        );
-        break;
-      case 'items':
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const MagicItemsScreen()),
+          MaterialPageRoute(builder: (context) => const DndScreen()),
         );
         break;
       case 'settings':
