@@ -102,18 +102,12 @@ class _HomeScreenState extends State<HomeScreen> {
                     onTap: () => _navigateToMode('photo'),
                   ),
                   _ModeCard(
-                    title: 'Momir Vig',
+                    title: 'Momir',
+                    subtitle: 'Mo / MoJo / MoJoSto',
                     icon: Icons.casino,
                     color: Colors.purple,
                     enabled: _isConnected,
                     onTap: () => _navigateToMode('momir'),
-                  ),
-                  _ModeCard(
-                    title: 'MoJoSto',
-                    icon: Icons.auto_awesome,
-                    color: Colors.orange,
-                    enabled: _isConnected,
-                    onTap: () => _navigateToMode('mojosto'),
                   ),
                   _ModeCard(
                     title: 'Settings',
@@ -150,11 +144,6 @@ class _HomeScreenState extends State<HomeScreen> {
           MaterialPageRoute(builder: (context) => const MomirScreen()),
         );
         break;
-      case 'mojosto':
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('MoJoSto mode coming soon!')),
-        );
-        break;
       case 'settings':
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Settings coming soon!')),
@@ -166,6 +155,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
 class _ModeCard extends StatelessWidget {
   final String title;
+  final String? subtitle;
   final IconData icon;
   final Color color;
   final VoidCallback onTap;
@@ -173,6 +163,7 @@ class _ModeCard extends StatelessWidget {
 
   const _ModeCard({
     required this.title,
+    this.subtitle,
     required this.icon,
     required this.color,
     required this.onTap,
@@ -201,6 +192,14 @@ class _ModeCard extends StatelessWidget {
                 color: effectiveColor,
               ),
             ),
+            if (subtitle != null)
+              Text(
+                subtitle!,
+                style: TextStyle(
+                  fontSize: 11,
+                  color: effectiveColor.withValues(alpha: 0.8),
+                ),
+              ),
             if (!enabled)
               Text(
                 'Connect printer first',

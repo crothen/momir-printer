@@ -54,6 +54,25 @@ class ScryfallService {
       throw ScryfallException('Scryfall error: ${response.statusCode}');
     }
   }
+
+  /// Get a random equipment with mana value <= specified (Stonehewer Giant)
+  Future<MtgCard> getRandomEquipment(int maxManaValue) async {
+    await _rateLimit();
+    
+    // Equipment with MV 0 to maxManaValue
+    final query = Uri.encodeComponent('type:equipment cmc<=$maxManaValue');
+    final response = await http.get(
+      Uri.parse('$_baseUrl/cards/random?q=$query'),
+    );
+    
+    if (response.statusCode == 200) {
+      return MtgCard.fromJson(jsonDecode(response.body));
+    } else if (response.statusCode == 404) {
+      throw NoCardFoundException('No equipment found at MV ≤$maxManaValue');
+    } else {
+      throw ScryfallException('Scryfall error: ${response.statusCode}');
+    }
+  }
 }
 
 class ScryfallException implements Exception {
