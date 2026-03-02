@@ -347,10 +347,13 @@ class _MomirScreenState extends State<MomirScreen> {
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
       itemCount: _results.length,
       itemBuilder: (context, index) {
-        return _buildResultCard(_results[index], index);
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: _buildResultCard(_results[index], index),
+        );
       },
     );
   }
@@ -398,6 +401,8 @@ class _MomirScreenState extends State<MomirScreen> {
     final showBw = _previewBwIndex == index && result.bwPreview != null;
     
     return Card(
+      margin: EdgeInsets.zero,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -413,17 +418,16 @@ class _MomirScreenState extends State<MomirScreen> {
                       width: double.infinity,
                       child: Image.memory(
                         result.bwPreview!,
-                        height: 250,
-                        fit: BoxFit.contain,
+                        width: double.infinity,
+                        fit: BoxFit.fitWidth, // Fill width, height adjusts
                         filterQuality: FilterQuality.none,
                       ),
                     )
                   else if (result.card.images.normal != null)
                     Image.network(
                       result.card.images.normal!,
-                      height: 250,
                       width: double.infinity,
-                      fit: BoxFit.contain,
+                      fit: BoxFit.fitWidth, // Fill width, height adjusts
                     ),
                   Positioned(
                     top: 8,
