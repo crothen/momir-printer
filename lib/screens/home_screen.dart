@@ -4,6 +4,7 @@ import '../services/bluetooth_service.dart';
 import '../widgets/printer_dialog.dart';
 import 'photo_print_screen.dart';
 import 'momir_screen.dart';
+import 'spells_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -103,10 +104,17 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   _ModeCard(
                     title: 'Momir',
-                    subtitle: 'Mo / MoJo / MoJoSto',
+                    subtitle: 'Mo / MoSto / Jhoira',
                     icon: Icons.casino,
                     color: Colors.purple,
                     onTap: () => _navigateToMode('momir'),
+                  ),
+                  _ModeCard(
+                    title: 'D&D Spells',
+                    subtitle: '2024 Rules',
+                    icon: Icons.auto_stories,
+                    color: Colors.deepOrange,
+                    onTap: () => _navigateToMode('spells'),
                   ),
                   _ModeCard(
                     title: 'Settings',
@@ -141,6 +149,12 @@ class _HomeScreenState extends State<HomeScreen> {
         Navigator.push(
           context,
           MaterialPageRoute(builder: (context) => const MomirScreen()),
+        );
+        break;
+      case 'spells':
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const SpellsScreen()),
         );
         break;
       case 'settings':
