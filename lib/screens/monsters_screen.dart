@@ -528,20 +528,20 @@ class _MonsterDetailSheetState extends State<_MonsterDetailSheet> {
     
     // Measure text heights
     final namePainter = TextPainter(
-      text: TextSpan(text: monster.name.toUpperCase(), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black)),
+      text: TextSpan(text: monster.name.toUpperCase(), style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.black)),  // 200%
       textDirection: TextDirection.ltr,
     )..layout(maxWidth: contentWidth);
     
     final metaPainter = TextPainter(
-      text: TextSpan(text: monster.meta, style: const TextStyle(fontSize: 10, fontStyle: FontStyle.italic, color: Colors.black)),
+      text: TextSpan(text: monster.meta, style: const TextStyle(fontSize: 18, fontStyle: FontStyle.italic, color: Colors.black)),  // 200%
       textDirection: TextDirection.ltr,
     )..layout(maxWidth: contentWidth);
     
     // Calculate height
-    double height = padding + namePainter.height + 2 + metaPainter.height + 8;
-    height += 60; // AC, HP, Speed
-    height += 50; // Stats row
-    height += 80; // Senses, Languages, CR
+    double height = padding + namePainter.height + 4 + metaPainter.height + 12;
+    height += 100; // AC, HP, Speed (larger)
+    height += 80; // Stats row (larger)
+    height += 100; // Senses, Languages, CR (larger)
     height += padding;
     
     // Draw
@@ -551,49 +551,49 @@ class _MonsterDetailSheetState extends State<_MonsterDetailSheet> {
     double y = padding;
     
     namePainter.paint(canvas, Offset((width - namePainter.width) / 2, y));
-    y += namePainter.height + 2;
+    y += namePainter.height + 4;
     metaPainter.paint(canvas, Offset((width - metaPainter.width) / 2, y));
-    y += metaPainter.height + 6;
+    y += metaPainter.height + 10;
     
-    canvas.drawLine(Offset(padding, y), Offset(width - padding, y), Paint()..color = Colors.black..strokeWidth = 1);
-    y += 6;
+    canvas.drawLine(Offset(padding, y), Offset(width - padding, y), Paint()..color = Colors.black..strokeWidth = 2);
+    y += 10;
     
     // AC, HP, Speed
     for (var stat in [['AC', monster.ac], ['HP', monster.hp], ['Speed', monster.speed]]) {
-      final label = TextPainter(text: TextSpan(text: '${stat[0]}: ', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.black)), textDirection: TextDirection.ltr)..layout();
-      final value = TextPainter(text: TextSpan(text: stat[1], style: const TextStyle(fontSize: 10, color: Colors.black)), textDirection: TextDirection.ltr)..layout(maxWidth: contentWidth - label.width);
+      final label = TextPainter(text: TextSpan(text: '${stat[0]}: ', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black)), textDirection: TextDirection.ltr)..layout();  // 200%
+      final value = TextPainter(text: TextSpan(text: stat[1], style: const TextStyle(fontSize: 18, color: Colors.black)), textDirection: TextDirection.ltr)..layout(maxWidth: contentWidth - label.width);  // 200%
       label.paint(canvas, Offset(padding, y));
       value.paint(canvas, Offset(padding + label.width, y));
-      y += 16;
+      y += 28;  // Larger line height
     }
     
-    y += 4;
-    canvas.drawLine(Offset(padding, y), Offset(width - padding, y), Paint()..color = Colors.black..strokeWidth = 1);
     y += 6;
+    canvas.drawLine(Offset(padding, y), Offset(width - padding, y), Paint()..color = Colors.black..strokeWidth = 2);
+    y += 10;
     
     // Stats
     final statKeys = ['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA'];
     final cellWidth = contentWidth / 6;
     for (int i = 0; i < 6; i++) {
       final x = padding + (i * cellWidth) + (cellWidth / 2);
-      final keyPainter = TextPainter(text: TextSpan(text: statKeys[i], style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.black)), textDirection: TextDirection.ltr)..layout();
+      final keyPainter = TextPainter(text: TextSpan(text: statKeys[i], style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.black)), textDirection: TextDirection.ltr)..layout();  // 200%
       final valStr = monster.stats[statKeys[i]]!;
-      final valPainter = TextPainter(text: TextSpan(text: valStr.split(' ').first, style: const TextStyle(fontSize: 10, color: Colors.black)), textDirection: TextDirection.ltr)..layout();
+      final valPainter = TextPainter(text: TextSpan(text: valStr.split(' ').first, style: const TextStyle(fontSize: 16, color: Colors.black)), textDirection: TextDirection.ltr)..layout();  // 200%
       keyPainter.paint(canvas, Offset(x - keyPainter.width / 2, y));
-      valPainter.paint(canvas, Offset(x - valPainter.width / 2, y + 12));
+      valPainter.paint(canvas, Offset(x - valPainter.width / 2, y + 18));
     }
-    y += 36;
+    y += 50;
     
-    canvas.drawLine(Offset(padding, y), Offset(width - padding, y), Paint()..color = Colors.black..strokeWidth = 1);
-    y += 6;
+    canvas.drawLine(Offset(padding, y), Offset(width - padding, y), Paint()..color = Colors.black..strokeWidth = 2);
+    y += 10;
     
     // Senses, Languages, CR
     for (var stat in [['Senses', monster.senses], ['Languages', monster.languages], ['Challenge', monster.challenge]]) {
-      final label = TextPainter(text: TextSpan(text: '${stat[0]}: ', style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.black)), textDirection: TextDirection.ltr)..layout();
-      final value = TextPainter(text: TextSpan(text: stat[1], style: const TextStyle(fontSize: 9, color: Colors.black)), textDirection: TextDirection.ltr)..layout(maxWidth: contentWidth - label.width);
+      final label = TextPainter(text: TextSpan(text: '${stat[0]}: ', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black)), textDirection: TextDirection.ltr)..layout();  // 200%
+      final value = TextPainter(text: TextSpan(text: stat[1], style: const TextStyle(fontSize: 16, color: Colors.black)), textDirection: TextDirection.ltr)..layout(maxWidth: contentWidth - label.width);  // 200%
       label.paint(canvas, Offset(padding, y));
       value.paint(canvas, Offset(padding + label.width, y));
-      y += 14;
+      y += 24;  // Larger line height
     }
     
     final picture = recorder.endRecording();

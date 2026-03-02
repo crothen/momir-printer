@@ -434,24 +434,24 @@ class _ItemDetailSheetState extends State<_ItemDetailSheet> {
     const contentWidth = width - (padding * 2);
     
     final namePainter = TextPainter(
-      text: TextSpan(text: item.name.toUpperCase(), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black)),
+      text: TextSpan(text: item.name.toUpperCase(), style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.black)),  // 200%
       textDirection: TextDirection.ltr,
     )..layout(maxWidth: contentWidth);
     
     final typePainter = TextPainter(
       text: TextSpan(
         text: '${item.type}, ${item.rarity}${item.attunement ? ' (requires attunement)' : ''}',
-        style: const TextStyle(fontSize: 10, fontStyle: FontStyle.italic, color: Colors.black),
+        style: const TextStyle(fontSize: 18, fontStyle: FontStyle.italic, color: Colors.black),  // 200%
       ),
       textDirection: TextDirection.ltr,
     )..layout(maxWidth: contentWidth);
     
     final descPainter = TextPainter(
-      text: TextSpan(text: item.description, style: const TextStyle(fontSize: 10, color: Colors.black, height: 1.3)),
+      text: TextSpan(text: item.description, style: const TextStyle(fontSize: 18, color: Colors.black, height: 1.3)),  // 200%
       textDirection: TextDirection.ltr,
     )..layout(maxWidth: contentWidth);
     
-    double height = padding + namePainter.height + 4 + typePainter.height + 12 + descPainter.height + padding;
+    double height = padding + namePainter.height + 8 + typePainter.height + 16 + descPainter.height + padding;
     
     canvas.drawRect(Rect.fromLTWH(0, 0, width, height), Paint()..color = Colors.white);
     canvas.drawRect(Rect.fromLTWH(3, 3, width - 6, height - 6), Paint()..color = Colors.black..style = PaintingStyle.stroke..strokeWidth = 2);
@@ -459,12 +459,12 @@ class _ItemDetailSheetState extends State<_ItemDetailSheet> {
     double y = padding;
     
     namePainter.paint(canvas, Offset((width - namePainter.width) / 2, y));
-    y += namePainter.height + 2;
+    y += namePainter.height + 6;
     typePainter.paint(canvas, Offset((width - typePainter.width) / 2, y));
-    y += typePainter.height + 6;
+    y += typePainter.height + 10;
     
-    canvas.drawLine(Offset(padding, y), Offset(width - padding, y), Paint()..color = Colors.black..strokeWidth = 1);
-    y += 8;
+    canvas.drawLine(Offset(padding, y), Offset(width - padding, y), Paint()..color = Colors.black..strokeWidth = 2);
+    y += 12;
     
     descPainter.paint(canvas, Offset(padding, y));
     

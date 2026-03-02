@@ -439,12 +439,12 @@ class _EquipmentDetailSheetState extends State<_EquipmentDetailSheet> {
     const contentWidth = width - (padding * 2);
     
     final namePainter = TextPainter(
-      text: TextSpan(text: item.name.toUpperCase(), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black)),
+      text: TextSpan(text: item.name.toUpperCase(), style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.black)),  // 200%
       textDirection: TextDirection.ltr,
     )..layout(maxWidth: contentWidth);
     
     final catPainter = TextPainter(
-      text: TextSpan(text: item.category, style: const TextStyle(fontSize: 10, fontStyle: FontStyle.italic, color: Colors.black)),
+      text: TextSpan(text: item.category, style: const TextStyle(fontSize: 18, fontStyle: FontStyle.italic, color: Colors.black)),  // 200%
       textDirection: TextDirection.ltr,
     )..layout(maxWidth: contentWidth);
     
@@ -457,8 +457,8 @@ class _EquipmentDetailSheetState extends State<_EquipmentDetailSheet> {
     if (item.ac != null) stats.add(['AC:', item.ac!]);
     if (item.properties != null) stats.add(['Properties:', item.properties!]);
     
-    double height = padding + namePainter.height + 2 + catPainter.height + 10;
-    height += stats.length * 16 + 8;
+    double height = padding + namePainter.height + 6 + catPainter.height + 14;
+    height += stats.length * 28 + 12;  // Larger line height
     height += padding;
     
     canvas.drawRect(Rect.fromLTWH(0, 0, width, height), Paint()..color = Colors.white);
@@ -467,19 +467,19 @@ class _EquipmentDetailSheetState extends State<_EquipmentDetailSheet> {
     double y = padding;
     
     namePainter.paint(canvas, Offset((width - namePainter.width) / 2, y));
-    y += namePainter.height + 2;
+    y += namePainter.height + 6;
     catPainter.paint(canvas, Offset((width - catPainter.width) / 2, y));
-    y += catPainter.height + 6;
+    y += catPainter.height + 10;
     
-    canvas.drawLine(Offset(padding, y), Offset(width - padding, y), Paint()..color = Colors.black..strokeWidth = 1);
-    y += 8;
+    canvas.drawLine(Offset(padding, y), Offset(width - padding, y), Paint()..color = Colors.black..strokeWidth = 2);
+    y += 12;
     
     for (var stat in stats) {
-      final label = TextPainter(text: TextSpan(text: stat[0], style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.black)), textDirection: TextDirection.ltr)..layout();
-      final value = TextPainter(text: TextSpan(text: ' ${stat[1]}', style: const TextStyle(fontSize: 10, color: Colors.black)), textDirection: TextDirection.ltr)..layout(maxWidth: contentWidth - label.width);
+      final label = TextPainter(text: TextSpan(text: stat[0], style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black)), textDirection: TextDirection.ltr)..layout();  // 200%
+      final value = TextPainter(text: TextSpan(text: ' ${stat[1]}', style: const TextStyle(fontSize: 18, color: Colors.black)), textDirection: TextDirection.ltr)..layout(maxWidth: contentWidth - label.width);  // 200%
       label.paint(canvas, Offset(padding, y));
       value.paint(canvas, Offset(padding + label.width, y));
-      y += 16;
+      y += 28;  // Larger line height
     }
     
     final picture = recorder.endRecording();

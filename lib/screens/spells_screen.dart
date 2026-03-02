@@ -733,7 +733,7 @@ class _SpellDetailSheetState extends State<_SpellDetailSheet> {
       text: TextSpan(
         text: spell.name.toUpperCase(),
         style: const TextStyle(
-          fontSize: 20,
+          fontSize: 36,  // 200% of 18
           fontWeight: FontWeight.bold,
           color: Colors.black,
         ),
@@ -744,7 +744,7 @@ class _SpellDetailSheetState extends State<_SpellDetailSheet> {
     final descPainter = TextPainter(
       text: TextSpan(
         text: spell.description,
-        style: const TextStyle(fontSize: 11, color: Colors.black, height: 1.3),
+        style: const TextStyle(fontSize: 20, color: Colors.black, height: 1.3),  // 200% of 10
       ),
       textDirection: TextDirection.ltr,
     )..layout(maxWidth: contentWidth);
@@ -754,7 +754,7 @@ class _SpellDetailSheetState extends State<_SpellDetailSheet> {
       higherPainter = TextPainter(
         text: TextSpan(
           text: '${spell.level == 0 ? "Higher Levels: " : "At Higher Levels: "}${spell.cantripUpgrade}',
-          style: const TextStyle(fontSize: 10, color: Colors.black, fontStyle: FontStyle.italic),
+          style: const TextStyle(fontSize: 18, color: Colors.black, fontStyle: FontStyle.italic),  // 200% of 9
         ),
         textDirection: TextDirection.ltr,
       )..layout(maxWidth: contentWidth);
@@ -762,16 +762,16 @@ class _SpellDetailSheetState extends State<_SpellDetailSheet> {
     
     // Calculate total height
     double height = padding; // Top padding
-    height += namePainter.height + 4; // Name
-    height += 16; // Level/school line
-    height += 8; // Divider spacing
-    height += 70; // Stats section
-    height += 8; // Divider spacing
-    height += descPainter.height + 12; // Description
+    height += namePainter.height + 8; // Name
+    height += 30; // Level/school line
+    height += 12; // Divider spacing
+    height += 130; // Stats section (4 lines * ~28 + padding)
+    height += 12; // Divider spacing
+    height += descPainter.height + 16; // Description
     if (higherPainter != null) {
-      height += higherPainter.height + 16;
+      height += higherPainter.height + 20;
     }
-    height += 24; // Classes
+    height += 36; // Classes
     height += padding; // Bottom padding
     
     // Draw white background
@@ -799,12 +799,12 @@ class _SpellDetailSheetState extends State<_SpellDetailSheet> {
     final typePainter = TextPainter(
       text: TextSpan(
         text: '${spell.levelText} ${spell.school[0].toUpperCase()}${spell.school.substring(1)}',
-        style: const TextStyle(fontSize: 12, color: Colors.black, fontStyle: FontStyle.italic),
+        style: const TextStyle(fontSize: 22, color: Colors.black, fontStyle: FontStyle.italic),  // 200%
       ),
       textDirection: TextDirection.ltr,
     )..layout();
     typePainter.paint(canvas, Offset((width - typePainter.width) / 2, y));
-    y += typePainter.height + 8;
+    y += typePainter.height + 12;
     
     // Divider
     canvas.drawLine(
@@ -826,7 +826,7 @@ class _SpellDetailSheetState extends State<_SpellDetailSheet> {
       final labelPainter = TextPainter(
         text: TextSpan(
           text: stat[0],
-          style: const TextStyle(fontSize: 10, color: Colors.black, fontWeight: FontWeight.bold),
+          style: const TextStyle(fontSize: 18, color: Colors.black, fontWeight: FontWeight.bold),  // 200%
         ),
         textDirection: TextDirection.ltr,
       )..layout();
@@ -834,14 +834,14 @@ class _SpellDetailSheetState extends State<_SpellDetailSheet> {
       final valuePainter = TextPainter(
         text: TextSpan(
           text: ' ${stat[1]}',
-          style: const TextStyle(fontSize: 10, color: Colors.black),
+          style: const TextStyle(fontSize: 18, color: Colors.black),  // 200%
         ),
         textDirection: TextDirection.ltr,
       )..layout(maxWidth: contentWidth - labelPainter.width);
       
       labelPainter.paint(canvas, Offset(padding, y));
       valuePainter.paint(canvas, Offset(padding + labelPainter.width, y));
-      y += 16;
+      y += 28;  // Increased line height
     }
     
     y += 4;
@@ -885,7 +885,7 @@ class _SpellDetailSheetState extends State<_SpellDetailSheet> {
     final classesPainter = TextPainter(
       text: TextSpan(
         text: spell.classes.map((c) => c[0].toUpperCase() + c.substring(1)).join(' • '),
-        style: const TextStyle(fontSize: 10, color: Colors.black),
+        style: const TextStyle(fontSize: 18, color: Colors.black),  // 200%
       ),
       textDirection: TextDirection.ltr,
     )..layout();
