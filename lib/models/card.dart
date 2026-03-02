@@ -71,6 +71,6 @@ class CardImages {
     );
   }
 
-  /// Best image for thermal printing (art crop is usually cleanest)
-  String? get forPrinting => artCrop ?? normal ?? large ?? small;
+  /// Best image for thermal printing (full card)
+  String? get forPrinting => normal ?? large ?? borderCrop ?? small;
 }
