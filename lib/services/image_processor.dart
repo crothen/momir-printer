@@ -1,6 +1,14 @@
 import 'dart:typed_data';
 import 'package:image/image.dart' as img;
 
+/// Dithering algorithm options
+enum DitheringAlgorithm {
+  floydSteinberg,  // Classic, good for photos
+  atkinson,        // Lighter, good for text/line art
+  ordered,         // Bayer matrix, retro look
+  threshold,       // Simple black/white cutoff
+}
+
 /// Processes images for thermal printing
 class ImageProcessor {
   /// Standard thermal printer width in pixels
@@ -12,6 +20,9 @@ class ImageProcessor {
   static Uint8List processForPrinting(
     Uint8List imageBytes, {
     int width = defaultWidth,
+    DitheringAlgorithm algorithm = DitheringAlgorithm.floydSteinberg,
+    double contrast = 1.0,
+    double brightness = 0.0,
   }) {
     // Decode the image
     final image = img.decodeImage(imageBytes);
@@ -23,16 +34,83 @@ class ImageProcessor {
     final resized = img.copyResize(image, width: width);
     
     // Convert to grayscale
-    final grayscale = img.grayscale(resized);
+    var grayscale = img.grayscale(resized);
     
-    // Apply Floyd-Steinberg dithering
-    final dithered = _floydSteinbergDither(grayscale);
+    // Apply contrast and brightness adjustments
+    if (contrast != 1.0 || brightness != 0.0) {
+      grayscale = _adjustContrastBrightness(grayscale, contrast, brightness);
+    }
+    
+    // Apply dithering
+    final dithered = _applyDithering(grayscale, algorithm);
     
     // Pack into bytes
     return _packBits(dithered);
   }
 
-  /// Floyd-Steinberg dithering algorithm
+  /// Create a PNG preview of the processed image
+  static Uint8List createPreview(
+    Uint8List imageBytes, {
+    int width = defaultWidth,
+    DitheringAlgorithm algorithm = DitheringAlgorithm.floydSteinberg,
+    double contrast = 1.0,
+    double brightness = 0.0,
+  }) {
+    final image = img.decodeImage(imageBytes);
+    if (image == null) {
+      throw ImageProcessingException('Failed to decode image');
+    }
+
+    final resized = img.copyResize(image, width: width);
+    var grayscale = img.grayscale(resized);
+    
+    if (contrast != 1.0 || brightness != 0.0) {
+      grayscale = _adjustContrastBrightness(grayscale, contrast, brightness);
+    }
+    
+    final dithered = _applyDithering(grayscale, algorithm);
+    
+    return Uint8List.fromList(img.encodePng(dithered));
+  }
+
+  /// Adjust contrast and brightness
+  static img.Image _adjustContrastBrightness(img.Image image, double contrast, double brightness) {
+    final result = img.Image.from(image);
+    
+    for (int y = 0; y < result.height; y++) {
+      for (int x = 0; x < result.width; x++) {
+        final pixel = result.getPixel(x, y);
+        var value = img.getLuminance(pixel).toDouble();
+        
+        // Apply brightness (-1 to 1 range, mapped to -255 to 255)
+        value += brightness * 255;
+        
+        // Apply contrast (centered at 128)
+        value = ((value - 128) * contrast) + 128;
+        
+        final clamped = value.clamp(0, 255).toInt();
+        result.setPixelRgb(x, y, clamped, clamped, clamped);
+      }
+    }
+    
+    return result;
+  }
+
+  /// Apply selected dithering algorithm
+  static img.Image _applyDithering(img.Image image, DitheringAlgorithm algorithm) {
+    switch (algorithm) {
+      case DitheringAlgorithm.floydSteinberg:
+        return _floydSteinbergDither(image);
+      case DitheringAlgorithm.atkinson:
+        return _atkinsonDither(image);
+      case DitheringAlgorithm.ordered:
+        return _orderedDither(image);
+      case DitheringAlgorithm.threshold:
+        return _thresholdDither(image);
+    }
+  }
+
+  /// Floyd-Steinberg dithering algorithm (best for photos)
   static img.Image _floydSteinbergDither(img.Image image) {
     final result = img.Image.from(image);
     final width = result.width;
@@ -44,17 +122,88 @@ class ImageProcessor {
         final oldValue = img.getLuminance(pixel).toInt();
         final newValue = oldValue < 128 ? 0 : 255;
         
-        // Set the new value
         result.setPixelRgb(x, y, newValue, newValue, newValue);
         
-        // Calculate error
         final error = oldValue - newValue;
         
-        // Distribute error to neighbors
+        // Distribute error: 7/16 right, 3/16 bottom-left, 5/16 bottom, 1/16 bottom-right
         _addError(result, x + 1, y, error * 7 ~/ 16);
         _addError(result, x - 1, y + 1, error * 3 ~/ 16);
         _addError(result, x, y + 1, error * 5 ~/ 16);
         _addError(result, x + 1, y + 1, error * 1 ~/ 16);
+      }
+    }
+
+    return result;
+  }
+
+  /// Atkinson dithering (lighter, better for text/line art)
+  static img.Image _atkinsonDither(img.Image image) {
+    final result = img.Image.from(image);
+    final width = result.width;
+    final height = result.height;
+
+    for (int y = 0; y < height; y++) {
+      for (int x = 0; x < width; x++) {
+        final pixel = result.getPixel(x, y);
+        final oldValue = img.getLuminance(pixel).toInt();
+        final newValue = oldValue < 128 ? 0 : 255;
+        
+        result.setPixelRgb(x, y, newValue, newValue, newValue);
+        
+        // Atkinson only propagates 6/8 of the error (lighter result)
+        final error = (oldValue - newValue) ~/ 8;
+        
+        _addError(result, x + 1, y, error);
+        _addError(result, x + 2, y, error);
+        _addError(result, x - 1, y + 1, error);
+        _addError(result, x, y + 1, error);
+        _addError(result, x + 1, y + 1, error);
+        _addError(result, x, y + 2, error);
+      }
+    }
+
+    return result;
+  }
+
+  /// Ordered dithering using Bayer matrix (retro/stylized look)
+  static img.Image _orderedDither(img.Image image) {
+    final result = img.Image.from(image);
+    
+    // 4x4 Bayer matrix
+    const bayer = [
+      [ 0, 8, 2, 10],
+      [12, 4, 14, 6],
+      [ 3, 11, 1, 9],
+      [15, 7, 13, 5],
+    ];
+    
+    for (int y = 0; y < result.height; y++) {
+      for (int x = 0; x < result.width; x++) {
+        final pixel = result.getPixel(x, y);
+        final value = img.getLuminance(pixel).toInt();
+        
+        // Threshold from Bayer matrix (scaled to 0-255)
+        final threshold = (bayer[y % 4][x % 4] * 16) + 8;
+        final newValue = value > threshold ? 255 : 0;
+        
+        result.setPixelRgb(x, y, newValue, newValue, newValue);
+      }
+    }
+
+    return result;
+  }
+
+  /// Simple threshold dithering
+  static img.Image _thresholdDither(img.Image image, [int threshold = 128]) {
+    final result = img.Image.from(image);
+    
+    for (int y = 0; y < result.height; y++) {
+      for (int x = 0; x < result.width; x++) {
+        final pixel = result.getPixel(x, y);
+        final value = img.getLuminance(pixel).toInt();
+        final newValue = value < threshold ? 0 : 255;
+        result.setPixelRgb(x, y, newValue, newValue, newValue);
       }
     }
 

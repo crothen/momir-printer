@@ -1,7 +1,6 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:image/image.dart' as img;
 import '../services/bluetooth_service.dart';
 import '../services/image_processor.dart';
 import '../printers/phomemo_protocol.dart';
@@ -19,12 +18,16 @@ class _PhotoPrintScreenState extends State<PhotoPrintScreen> {
   
   Uint8List? _originalImage;
   Uint8List? _processedPreview;
-  Uint8List? _printData;
   int _printHeight = 0;
   
   bool _isProcessing = false;
   bool _isPrinting = false;
+  
+  // Settings
   double _density = 0.6;
+  double _contrast = 1.0;
+  double _brightness = 0.0;
+  DitheringAlgorithm _algorithm = DitheringAlgorithm.floydSteinberg;
 
   @override
   Widget build(BuildContext context) {
@@ -32,11 +35,10 @@ class _PhotoPrintScreenState extends State<PhotoPrintScreen> {
       appBar: AppBar(
         title: const Text('Photo Print'),
         actions: [
-          // Density slider
           IconButton(
             icon: const Icon(Icons.tune),
-            onPressed: _showDensityDialog,
-            tooltip: 'Print density',
+            onPressed: _showSettingsDialog,
+            tooltip: 'Image settings',
           ),
         ],
       ),
@@ -46,6 +48,29 @@ class _PhotoPrintScreenState extends State<PhotoPrintScreen> {
           Expanded(
             child: _buildPreview(),
           ),
+          
+          // Quick algorithm selector
+          if (_originalImage != null)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: DitheringAlgorithm.values.map((algo) {
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: ChoiceChip(
+                        label: Text(_algorithmName(algo)),
+                        selected: _algorithm == algo,
+                        onSelected: (_) => _setAlgorithm(algo),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+            ),
+          
+          const SizedBox(height: 8),
           
           // Action buttons
           Padding(
@@ -83,6 +108,19 @@ class _PhotoPrintScreenState extends State<PhotoPrintScreen> {
         ],
       ),
     );
+  }
+
+  String _algorithmName(DitheringAlgorithm algo) {
+    switch (algo) {
+      case DitheringAlgorithm.floydSteinberg:
+        return 'Floyd-Steinberg';
+      case DitheringAlgorithm.atkinson:
+        return 'Atkinson';
+      case DitheringAlgorithm.ordered:
+        return 'Ordered';
+      case DitheringAlgorithm.threshold:
+        return 'Threshold';
+    }
   }
 
   Widget _buildPreview() {
@@ -139,7 +177,7 @@ class _PhotoPrintScreenState extends State<PhotoPrintScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Preview (384 × $_printHeight px)',
+            '384 × $_printHeight px • ${_algorithmName(_algorithm)}',
             style: Theme.of(context).textTheme.bodySmall,
           ),
         ],
@@ -151,34 +189,31 @@ class _PhotoPrintScreenState extends State<PhotoPrintScreen> {
     final picked = await _imagePicker.pickImage(source: ImageSource.gallery);
     if (picked == null) return;
     
-    setState(() {
-      _isProcessing = true;
-      _originalImage = null;
-      _processedPreview = null;
-      _printData = null;
-    });
+    final bytes = await picked.readAsBytes();
+    _originalImage = bytes;
+    
+    await _updatePreview();
+  }
+
+  Future<void> _updatePreview() async {
+    if (_originalImage == null) return;
+    
+    setState(() => _isProcessing = true);
     
     try {
-      final bytes = await picked.readAsBytes();
-      _originalImage = bytes;
-      
-      // Process for printing
-      _printData = ImageProcessor.processForPrinting(bytes);
-      
-      // Get dimensions for preview
-      final dims = ImageProcessor.getProcessedDimensions(bytes);
+      final dims = ImageProcessor.getProcessedDimensions(_originalImage!);
       _printHeight = dims.height;
       
-      // Create preview image (PNG for display)
-      _processedPreview = _createPreviewImage(bytes);
+      _processedPreview = ImageProcessor.createPreview(
+        _originalImage!,
+        algorithm: _algorithm,
+        contrast: _contrast,
+        brightness: _brightness,
+      );
       
-      setState(() {
-        _isProcessing = false;
-      });
+      setState(() => _isProcessing = false);
     } catch (e) {
-      setState(() {
-        _isProcessing = false;
-      });
+      setState(() => _isProcessing = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Failed to process image: $e')),
@@ -187,42 +222,33 @@ class _PhotoPrintScreenState extends State<PhotoPrintScreen> {
     }
   }
 
-  Uint8List _createPreviewImage(Uint8List imageBytes) {
-    // Decode, resize, grayscale, dither, then encode as PNG for preview
-    final image = img.decodeImage(imageBytes);
-    if (image == null) throw Exception('Failed to decode image');
-    
-    final resized = img.copyResize(image, width: ImageProcessor.defaultWidth);
-    final grayscale = img.grayscale(resized);
-    
-    // Simple threshold dithering for preview (faster than Floyd-Steinberg)
-    for (var y = 0; y < grayscale.height; y++) {
-      for (var x = 0; x < grayscale.width; x++) {
-        final pixel = grayscale.getPixel(x, y);
-        final lum = img.getLuminance(pixel);
-        final newVal = lum < 128 ? 0 : 255;
-        grayscale.setPixelRgb(x, y, newVal, newVal, newVal);
-      }
-    }
-    
-    return Uint8List.fromList(img.encodePng(grayscale));
+  void _setAlgorithm(DitheringAlgorithm algo) {
+    _algorithm = algo;
+    _updatePreview();
   }
 
   bool _canPrint() {
-    return _printData != null && 
+    return _originalImage != null && 
            !_isPrinting && 
            _bluetooth.currentState == BleConnectionState.connected;
   }
 
   Future<void> _printImage() async {
-    if (_printData == null) return;
+    if (_originalImage == null) return;
     
     setState(() => _isPrinting = true);
     
     try {
+      final printData = ImageProcessor.processForPrinting(
+        _originalImage!,
+        algorithm: _algorithm,
+        contrast: _contrast,
+        brightness: _brightness,
+      );
+      
       final protocol = PhomemoProtocol(_bluetooth);
       final success = await protocol.printFullImage(
-        _printData!,
+        printData,
         ImageProcessor.defaultWidth,
         _printHeight,
         density: _density,
@@ -247,38 +273,95 @@ class _PhotoPrintScreenState extends State<PhotoPrintScreen> {
     }
   }
 
-  void _showDensityDialog() {
+  void _showSettingsDialog() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Print Density'),
-        content: StatefulBuilder(
-          builder: (context, setDialogState) {
-            return Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Slider(
-                  value: _density,
-                  min: 0.2,
-                  max: 1.0,
-                  divisions: 8,
-                  label: '${(_density * 100).round()}%',
-                  onChanged: (value) {
-                    setDialogState(() => _density = value);
-                    setState(() {}); // Update parent too
-                  },
-                ),
-                Text('${(_density * 100).round()}% darkness'),
-              ],
-            );
-          },
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
-          ),
-        ],
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          return AlertDialog(
+            title: const Text('Image Settings'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Print density
+                  const Text('Print Density', style: TextStyle(fontWeight: FontWeight.bold)),
+                  Slider(
+                    value: _density,
+                    min: 0.2,
+                    max: 1.0,
+                    divisions: 8,
+                    label: '${(_density * 100).round()}%',
+                    onChanged: (value) {
+                      setDialogState(() => _density = value);
+                    },
+                  ),
+                  
+                  const SizedBox(height: 16),
+                  
+                  // Contrast
+                  const Text('Contrast', style: TextStyle(fontWeight: FontWeight.bold)),
+                  Slider(
+                    value: _contrast,
+                    min: 0.5,
+                    max: 2.0,
+                    divisions: 15,
+                    label: _contrast.toStringAsFixed(1),
+                    onChanged: (value) {
+                      setDialogState(() => _contrast = value);
+                    },
+                  ),
+                  
+                  const SizedBox(height: 16),
+                  
+                  // Brightness
+                  const Text('Brightness', style: TextStyle(fontWeight: FontWeight.bold)),
+                  Slider(
+                    value: _brightness,
+                    min: -0.5,
+                    max: 0.5,
+                    divisions: 20,
+                    label: _brightness.toStringAsFixed(2),
+                    onChanged: (value) {
+                      setDialogState(() => _brightness = value);
+                    },
+                  ),
+                  
+                  const SizedBox(height: 16),
+                  
+                  // Reset button
+                  Center(
+                    child: TextButton(
+                      onPressed: () {
+                        setDialogState(() {
+                          _density = 0.6;
+                          _contrast = 1.0;
+                          _brightness = 0.0;
+                        });
+                      },
+                      child: const Text('Reset to defaults'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  setState(() {}); // Update parent state
+                  _updatePreview(); // Regenerate preview
+                },
+                child: const Text('Apply'),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
