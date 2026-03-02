@@ -23,17 +23,18 @@ class ScryfallService {
   Future<MtgCard> getRandomCreature(int manaValue) async {
     await _rateLimit();
     
-    final query = Uri.encodeComponent('type:creature cmc:$manaValue');
-    final response = await http.get(
-      Uri.parse('$_baseUrl/cards/random?q=$query'),
-    );
+    final query = Uri.encodeComponent('type:creature mv=$manaValue');
+    final url = '$_baseUrl/cards/random?q=$query';
+    
+    final response = await http.get(Uri.parse(url));
     
     if (response.statusCode == 200) {
       return MtgCard.fromJson(jsonDecode(response.body));
     } else if (response.statusCode == 404) {
       throw NoCardFoundException('No creature found at MV $manaValue');
     } else {
-      throw ScryfallException('Scryfall error: ${response.statusCode}');
+      final errorBody = _parseError(response.body);
+      throw ScryfallException('Scryfall error ${response.statusCode}: $errorBody');
     }
   }
 
@@ -41,17 +42,18 @@ class ScryfallService {
   Future<MtgCard> getRandomInstantOrSorcery(int manaValue) async {
     await _rateLimit();
     
-    final query = Uri.encodeComponent('(type:instant OR type:sorcery) cmc:$manaValue');
-    final response = await http.get(
-      Uri.parse('$_baseUrl/cards/random?q=$query'),
-    );
+    final query = Uri.encodeComponent('(type:instant or type:sorcery) mv=$manaValue');
+    final url = '$_baseUrl/cards/random?q=$query';
+    
+    final response = await http.get(Uri.parse(url));
     
     if (response.statusCode == 200) {
       return MtgCard.fromJson(jsonDecode(response.body));
     } else if (response.statusCode == 404) {
       throw NoCardFoundException('No instant/sorcery found at MV $manaValue');
     } else {
-      throw ScryfallException('Scryfall error: ${response.statusCode}');
+      final errorBody = _parseError(response.body);
+      throw ScryfallException('Scryfall error ${response.statusCode}: $errorBody');
     }
   }
 
@@ -59,18 +61,28 @@ class ScryfallService {
   Future<MtgCard> getRandomEquipment(int maxManaValue) async {
     await _rateLimit();
     
-    // Equipment with MV 0 to maxManaValue
-    final query = Uri.encodeComponent('type:equipment cmc<=$maxManaValue');
-    final response = await http.get(
-      Uri.parse('$_baseUrl/cards/random?q=$query'),
-    );
+    // Use mv<= for mana value comparison
+    final query = Uri.encodeComponent('type:equipment mv<=$maxManaValue');
+    final url = '$_baseUrl/cards/random?q=$query';
+    
+    final response = await http.get(Uri.parse(url));
     
     if (response.statusCode == 200) {
       return MtgCard.fromJson(jsonDecode(response.body));
     } else if (response.statusCode == 404) {
       throw NoCardFoundException('No equipment found at MV ≤$maxManaValue');
     } else {
-      throw ScryfallException('Scryfall error: ${response.statusCode}');
+      final errorBody = _parseError(response.body);
+      throw ScryfallException('Scryfall error ${response.statusCode}: $errorBody');
+    }
+  }
+
+  String _parseError(String body) {
+    try {
+      final json = jsonDecode(body);
+      return json['details'] ?? json['error'] ?? 'Unknown error';
+    } catch (_) {
+      return body.length > 100 ? '${body.substring(0, 100)}...' : body;
     }
   }
 }
