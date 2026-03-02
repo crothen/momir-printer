@@ -6,6 +6,12 @@ import '../models/card.dart';
 class ScryfallService {
   static const _baseUrl = 'https://api.scryfall.com';
   
+  // Required headers for Scryfall API
+  static const _headers = {
+    'User-Agent': 'MomirPrinter/1.0 (Flutter App)',
+    'Accept': 'application/json',
+  };
+  
   // Rate limiting: Scryfall wants 50-100ms between requests
   DateTime? _lastRequest;
   
@@ -26,7 +32,7 @@ class ScryfallService {
     final query = Uri.encodeComponent('type:creature mv=$manaValue');
     final url = '$_baseUrl/cards/random?q=$query';
     
-    final response = await http.get(Uri.parse(url));
+    final response = await http.get(Uri.parse(url), headers: _headers);
     
     if (response.statusCode == 200) {
       return MtgCard.fromJson(jsonDecode(response.body));
@@ -45,7 +51,7 @@ class ScryfallService {
     final query = Uri.encodeComponent('type:instant');
     final url = '$_baseUrl/cards/random?q=$query';
     
-    final response = await http.get(Uri.parse(url));
+    final response = await http.get(Uri.parse(url), headers: _headers);
     
     if (response.statusCode == 200) {
       return MtgCard.fromJson(jsonDecode(response.body));
@@ -64,7 +70,7 @@ class ScryfallService {
     final query = Uri.encodeComponent('type:sorcery');
     final url = '$_baseUrl/cards/random?q=$query';
     
-    final response = await http.get(Uri.parse(url));
+    final response = await http.get(Uri.parse(url), headers: _headers);
     
     if (response.statusCode == 200) {
       return MtgCard.fromJson(jsonDecode(response.body));
@@ -84,7 +90,7 @@ class ScryfallService {
     final query = Uri.encodeComponent('type:equipment mv<=$maxManaValue');
     final url = '$_baseUrl/cards/random?q=$query';
     
-    final response = await http.get(Uri.parse(url));
+    final response = await http.get(Uri.parse(url), headers: _headers);
     
     if (response.statusCode == 200) {
       return MtgCard.fromJson(jsonDecode(response.body));
