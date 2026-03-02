@@ -106,7 +106,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     subtitle: 'Mo / MoJo / MoJoSto',
                     icon: Icons.casino,
                     color: Colors.purple,
-                    enabled: _isConnected,
                     onTap: () => _navigateToMode('momir'),
                   ),
                   _ModeCard(

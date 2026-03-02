@@ -12,12 +12,14 @@ class AbilityResult {
   final String abilityName;
   final MtgCard? card;
   final Uint8List? imageBytes;
+  Uint8List? bwPreview; // Cached BW preview
   final String? error;
 
   AbilityResult({
     required this.abilityName,
     this.card,
     this.imageBytes,
+    this.bwPreview,
     this.error,
   });
 
@@ -48,6 +50,7 @@ class _MomirScreenState extends State<MomirScreen> {
   bool _isLoading = false;
   bool _isPrinting = false;
   int _printingIndex = -1;
+  int _previewBwIndex = -1; // Which card is showing BW preview
 
   String get _modeName {
     final parts = <String>[];
@@ -227,33 +230,69 @@ class _MomirScreenState extends State<MomirScreen> {
     }
 
     final card = result.card!;
+    final showBw = _previewBwIndex == index && result.bwPreview != null;
+    
     return Card(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Card image
-          if (card.images.normal != null)
-            ClipRRect(
+          // Card image (color or BW)
+          GestureDetector(
+            onTap: () => _toggleBwPreview(result, index),
+            child: ClipRRect(
               borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-              child: Image.network(
-                card.images.normal!,
-                height: 200,
-                width: double.infinity,
-                fit: BoxFit.contain,
-                loadingBuilder: (context, child, progress) {
-                  if (progress == null) return child;
-                  return const SizedBox(
-                    height: 200,
-                    child: Center(child: CircularProgressIndicator()),
-                  );
-                },
-                errorBuilder: (context, error, stack) => Container(
-                  height: 100,
-                  color: Colors.grey[800],
-                  child: const Center(child: Icon(Icons.broken_image)),
-                ),
+              child: Stack(
+                children: [
+                  if (showBw && result.bwPreview != null)
+                    Container(
+                      color: Colors.white,
+                      width: double.infinity,
+                      child: Image.memory(
+                        result.bwPreview!,
+                        height: 250,
+                        fit: BoxFit.contain,
+                        filterQuality: FilterQuality.none,
+                      ),
+                    )
+                  else if (card.images.normal != null)
+                    Image.network(
+                      card.images.normal!,
+                      height: 250,
+                      width: double.infinity,
+                      fit: BoxFit.contain,
+                      loadingBuilder: (context, child, progress) {
+                        if (progress == null) return child;
+                        return const SizedBox(
+                          height: 250,
+                          child: Center(child: CircularProgressIndicator()),
+                        );
+                      },
+                      errorBuilder: (context, error, stack) => Container(
+                        height: 100,
+                        color: Colors.grey[800],
+                        child: const Center(child: Icon(Icons.broken_image)),
+                      ),
+                    ),
+                  // BW indicator badge
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.black54,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        showBw ? 'B&W • Tap for color' : 'Tap for B&W preview',
+                        style: const TextStyle(color: Colors.white, fontSize: 10),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
+          ),
           
           // Card info + print button
           ListTile(
@@ -271,23 +310,48 @@ class _MomirScreenState extends State<MomirScreen> {
                   Text(card.ptString!, style: const TextStyle(fontWeight: FontWeight.bold)),
               ],
             ),
-            trailing: IconButton(
-              icon: _printingIndex == index
-                  ? const SizedBox(
-                      width: 24,
-                      height: 24,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.print),
-              onPressed: _isPrinting || result.imageBytes == null
-                  ? null
-                  : () => _printCard(result, index),
-              tooltip: 'Print',
-            ),
+            trailing: _bluetooth.currentState == BleConnectionState.connected
+                ? IconButton(
+                    icon: _printingIndex == index
+                        ? const SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.print),
+                    onPressed: _isPrinting || result.imageBytes == null
+                        ? null
+                        : () => _printCard(result, index),
+                    tooltip: 'Print',
+                  )
+                : const Tooltip(
+                    message: 'Connect printer to print',
+                    child: Icon(Icons.print_disabled, color: Colors.grey),
+                  ),
           ),
         ],
       ),
     );
+  }
+
+  void _toggleBwPreview(AbilityResult result, int index) {
+    if (_previewBwIndex == index) {
+      // Toggle off
+      setState(() => _previewBwIndex = -1);
+    } else {
+      // Generate BW preview if needed
+      if (result.bwPreview == null && result.imageBytes != null) {
+        try {
+          result.bwPreview = ImageProcessor.createPreview(result.imageBytes!);
+        } catch (e) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to generate preview: $e')),
+          );
+          return;
+        }
+      }
+      setState(() => _previewBwIndex = index);
+    }
   }
 
   bool _canRoll() {
