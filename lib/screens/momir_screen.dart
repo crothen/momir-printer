@@ -101,27 +101,32 @@ class _MomirScreenState extends State<MomirScreen> {
             child: _buildResults(),
           ),
           
-          // Action button
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: _canRoll() ? _startRoll : null,
-                icon: _isLoading 
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : Icon(_mode == GameMode.jhoira ? Icons.auto_fix_high : Icons.casino),
-                label: Text(_isLoading ? 'Rolling...' : _getButtonText()),
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
+          // Action button (not shown for Jhoira - uses type chooser instead)
+          if (_mode != GameMode.jhoira)
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: SizedBox(
+                width: double.infinity,
+                height: 72, // 200% of default ~36px
+                child: ElevatedButton.icon(
+                  onPressed: _canRoll() ? _startRoll : null,
+                  icon: _isLoading 
+                      ? const SizedBox(
+                          width: 28,
+                          height: 28,
+                          child: CircularProgressIndicator(strokeWidth: 3),
+                        )
+                      : const Icon(Icons.casino, size: 32),
+                  label: Text(
+                    _isLoading ? 'Rolling...' : 'Roll!',
+                    style: const TextStyle(fontSize: 20),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                  ),
                 ),
               ),
             ),
-          ),
         ],
       ),
     );
@@ -161,7 +166,7 @@ class _MomirScreenState extends State<MomirScreen> {
             _mode = selection.first;
             _results = [];
             _error = null;
-            _jhoiraChoosingType = false;
+            _jhoiraChoosingType = _mode == GameMode.jhoira; // Auto-show type chooser
             _jhoiraOptions = null;
           });
         },
@@ -215,33 +220,49 @@ class _MomirScreenState extends State<MomirScreen> {
         children: [
           const Text(
             'Choose spell type:',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
           Row(
             children: [
               Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: _isLoading ? null : () => _rollJhoira('instant'),
-                  icon: const Icon(Icons.flash_on),
-                  label: const Text('Instant'),
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    backgroundColor: Colors.blue,
-                    foregroundColor: Colors.white,
+                child: SizedBox(
+                  height: 72,
+                  child: ElevatedButton.icon(
+                    onPressed: _isLoading ? null : () => _rollJhoira('instant'),
+                    icon: _isLoading 
+                        ? const SizedBox(
+                            width: 28,
+                            height: 28,
+                            child: CircularProgressIndicator(strokeWidth: 3, color: Colors.white),
+                          )
+                        : const Icon(Icons.flash_on, size: 32),
+                    label: const Text('Instant', style: TextStyle(fontSize: 18)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue,
+                      foregroundColor: Colors.white,
+                    ),
                   ),
                 ),
               ),
               const SizedBox(width: 16),
               Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: _isLoading ? null : () => _rollJhoira('sorcery'),
-                  icon: const Icon(Icons.auto_awesome),
-                  label: const Text('Sorcery'),
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    backgroundColor: Colors.deepPurple,
-                    foregroundColor: Colors.white,
+                child: SizedBox(
+                  height: 72,
+                  child: ElevatedButton.icon(
+                    onPressed: _isLoading ? null : () => _rollJhoira('sorcery'),
+                    icon: _isLoading
+                        ? const SizedBox(
+                            width: 28,
+                            height: 28,
+                            child: CircularProgressIndicator(strokeWidth: 3, color: Colors.white),
+                          )
+                        : const Icon(Icons.auto_awesome, size: 32),
+                    label: const Text('Sorcery', style: TextStyle(fontSize: 18)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.deepPurple,
+                      foregroundColor: Colors.white,
+                    ),
                   ),
                 ),
               ),
