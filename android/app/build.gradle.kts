@@ -40,13 +40,15 @@ android {
             
             firebaseAppDistribution {
                 artifactType = "APK"
-                releaseNotes = "Initial release - Home screen with mode selection"
+                releaseNotes = "Release build"
+                groups = "testers"
             }
         }
         debug {
             firebaseAppDistribution {
                 artifactType = "APK"
                 releaseNotes = "Debug build"
+                groups = "testers"
             }
         }
     }
