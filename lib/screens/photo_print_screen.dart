@@ -79,8 +79,8 @@ class _PhotoPrintScreenState extends State<PhotoPrintScreen> {
               children: [
                 Expanded(
                   child: ElevatedButton.icon(
-                    onPressed: _isProcessing || _isPrinting ? null : _pickImage,
-                    icon: const Icon(Icons.photo_library),
+                    onPressed: _isProcessing || _isPrinting ? null : _showImageSourceDialog,
+                    icon: const Icon(Icons.add_photo_alternate),
                     label: const Text('Select Image'),
                   ),
                 ),
@@ -185,14 +185,43 @@ class _PhotoPrintScreenState extends State<PhotoPrintScreen> {
     );
   }
 
-  Future<void> _pickImage() async {
-    final picked = await _imagePicker.pickImage(source: ImageSource.gallery);
+  Future<void> _pickImage({ImageSource source = ImageSource.gallery}) async {
+    final picked = await _imagePicker.pickImage(source: source);
     if (picked == null) return;
     
     final bytes = await picked.readAsBytes();
     _originalImage = bytes;
     
     await _updatePreview();
+  }
+
+  void _showImageSourceDialog() {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_library),
+              title: const Text('Choose from Gallery'),
+              onTap: () {
+                Navigator.pop(context);
+                _pickImage(source: ImageSource.gallery);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.camera_alt),
+              title: const Text('Take a Photo'),
+              onTap: () {
+                Navigator.pop(context);
+                _pickImage(source: ImageSource.camera);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Future<void> _updatePreview() async {
