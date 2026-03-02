@@ -5,6 +5,8 @@ import '../widgets/printer_dialog.dart';
 import 'photo_print_screen.dart';
 import 'momir_screen.dart';
 import 'spells_screen.dart';
+import 'monsters_screen.dart';
+import 'magic_items_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -111,16 +113,24 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   _ModeCard(
                     title: 'D&D Spells',
-                    subtitle: '2024 Rules',
+                    subtitle: '339 spells',
                     icon: Icons.auto_stories,
                     color: Colors.deepOrange,
                     onTap: () => _navigateToMode('spells'),
                   ),
                   _ModeCard(
-                    title: 'Settings',
-                    icon: Icons.settings,
-                    color: Colors.grey,
-                    onTap: () => _navigateToMode('settings'),
+                    title: 'Monsters',
+                    subtitle: '327 creatures',
+                    icon: Icons.pets,
+                    color: Colors.red,
+                    onTap: () => _navigateToMode('monsters'),
+                  ),
+                  _ModeCard(
+                    title: 'Magic Items',
+                    subtitle: '241 items',
+                    icon: Icons.diamond,
+                    color: Colors.amber,
+                    onTap: () => _navigateToMode('items'),
                   ),
                 ],
               ),
@@ -155,6 +165,18 @@ class _HomeScreenState extends State<HomeScreen> {
         Navigator.push(
           context,
           MaterialPageRoute(builder: (context) => const SpellsScreen()),
+        );
+        break;
+      case 'monsters':
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const MonstersScreen()),
+        );
+        break;
+      case 'items':
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const MagicItemsScreen()),
         );
         break;
       case 'settings':
