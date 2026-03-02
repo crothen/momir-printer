@@ -38,11 +38,11 @@ class ScryfallService {
     }
   }
 
-  /// Get a random instant or sorcery with the specified mana value (Jhoira)
-  Future<MtgCard> getRandomInstantOrSorcery(int manaValue) async {
+  /// Get a random instant (any mana value)
+  Future<MtgCard> getRandomInstant() async {
     await _rateLimit();
     
-    final query = Uri.encodeComponent('(type:instant or type:sorcery) mv=$manaValue');
+    final query = Uri.encodeComponent('type:instant');
     final url = '$_baseUrl/cards/random?q=$query';
     
     final response = await http.get(Uri.parse(url));
@@ -50,7 +50,26 @@ class ScryfallService {
     if (response.statusCode == 200) {
       return MtgCard.fromJson(jsonDecode(response.body));
     } else if (response.statusCode == 404) {
-      throw NoCardFoundException('No instant/sorcery found at MV $manaValue');
+      throw NoCardFoundException('No instant found');
+    } else {
+      final errorBody = _parseError(response.body);
+      throw ScryfallException('Scryfall error ${response.statusCode}: $errorBody');
+    }
+  }
+
+  /// Get a random sorcery (any mana value)
+  Future<MtgCard> getRandomSorcery() async {
+    await _rateLimit();
+    
+    final query = Uri.encodeComponent('type:sorcery');
+    final url = '$_baseUrl/cards/random?q=$query';
+    
+    final response = await http.get(Uri.parse(url));
+    
+    if (response.statusCode == 200) {
+      return MtgCard.fromJson(jsonDecode(response.body));
+    } else if (response.statusCode == 404) {
+      throw NoCardFoundException('No sorcery found');
     } else {
       final errorBody = _parseError(response.body);
       throw ScryfallException('Scryfall error ${response.statusCode}: $errorBody');

@@ -7,23 +7,25 @@ import '../services/image_processor.dart';
 import '../printers/phomemo_protocol.dart';
 import '../models/card.dart';
 
-/// Result from a single ability activation
-class AbilityResult {
-  final String abilityName;
-  final MtgCard? card;
-  final Uint8List? imageBytes;
-  Uint8List? bwPreview; // Cached BW preview
-  final String? error;
+enum GameMode {
+  momir,
+  momirStonehewer,
+  jhoira,
+}
 
-  AbilityResult({
-    required this.abilityName,
-    this.card,
+/// Result from a single ability activation
+class CardResult {
+  final String source;
+  final MtgCard card;
+  final Uint8List? imageBytes;
+  Uint8List? bwPreview;
+
+  CardResult({
+    required this.source,
+    required this.card,
     this.imageBytes,
     this.bwPreview,
-    this.error,
   });
-
-  bool get success => card != null;
 }
 
 class MomirScreen extends StatefulWidget {
@@ -37,28 +39,31 @@ class _MomirScreenState extends State<MomirScreen> {
   final _bluetooth = BleManager();
   final _scryfall = ScryfallService();
   
+  GameMode _mode = GameMode.momir;
   int _selectedMana = 3;
   
-  // Ability toggles
-  bool _momirEnabled = true;
-  bool _jhoiraEnabled = false;
-  bool _stonehewerEnabled = false;
-  
   // Results
-  List<AbilityResult> _results = [];
+  List<CardResult> _results = [];
+  String? _error;
+  
+  // Jhoira state
+  bool _jhoiraChoosingType = false;
+  List<CardResult>? _jhoiraOptions;
   
   bool _isLoading = false;
   bool _isPrinting = false;
   int _printingIndex = -1;
-  int _previewBwIndex = -1; // Which card is showing BW preview
+  int _previewBwIndex = -1;
 
   String get _modeName {
-    final parts = <String>[];
-    if (_momirEnabled) parts.add('Mo');
-    if (_jhoiraEnabled) parts.add('Jo');
-    if (_stonehewerEnabled) parts.add('Sto');
-    if (parts.isEmpty) return 'Select abilities';
-    return parts.join('');
+    switch (_mode) {
+      case GameMode.momir:
+        return 'Momir';
+      case GameMode.momirStonehewer:
+        return 'MoSto';
+      case GameMode.jhoira:
+        return 'Jhoira';
+    }
   }
 
   @override
@@ -76,36 +81,41 @@ class _MomirScreenState extends State<MomirScreen> {
       ),
       body: Column(
         children: [
-          // Ability toggles
-          _buildAbilityToggles(),
+          // Mode selector
+          _buildModeSelector(),
           
           const Divider(),
           
-          // Mana selector
-          _buildManaSelector(),
+          // Mana selector (not for Jhoira)
+          if (_mode != GameMode.jhoira) _buildManaSelector(),
           
-          const Divider(),
+          // Jhoira type chooser
+          if (_mode == GameMode.jhoira && _jhoiraChoosingType)
+            _buildJhoiraTypeChooser(),
+          
+          if (_mode != GameMode.jhoira || !_jhoiraChoosingType)
+            const Divider(),
           
           // Results area
           Expanded(
             child: _buildResults(),
           ),
           
-          // Roll button
+          // Action button
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
-                onPressed: _canRoll() ? _roll : null,
+                onPressed: _canRoll() ? _startRoll : null,
                 icon: _isLoading 
                     ? const SizedBox(
                         width: 20,
                         height: 20,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                    : const Icon(Icons.casino),
-                label: Text(_isLoading ? 'Rolling...' : 'Roll!'),
+                    : Icon(_mode == GameMode.jhoira ? Icons.auto_fix_high : Icons.casino),
+                label: Text(_isLoading ? 'Rolling...' : _getButtonText()),
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
@@ -117,37 +127,44 @@ class _MomirScreenState extends State<MomirScreen> {
     );
   }
 
-  Widget _buildAbilityToggles() {
+  String _getButtonText() {
+    if (_mode == GameMode.jhoira) {
+      return 'Cast Jhoira';
+    }
+    return 'Roll!';
+  }
+
+  Widget _buildModeSelector() {
     return Padding(
       padding: const EdgeInsets.all(16.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          _AbilityToggle(
-            name: 'Momir',
-            icon: Icons.pets,
-            color: Colors.green,
-            description: 'Random creature',
-            enabled: _momirEnabled,
-            onToggle: (v) => setState(() => _momirEnabled = v),
+      child: SegmentedButton<GameMode>(
+        segments: const [
+          ButtonSegment(
+            value: GameMode.momir,
+            label: Text('Momir'),
+            icon: Icon(Icons.pets),
           ),
-          _AbilityToggle(
-            name: 'Jhoira',
-            icon: Icons.auto_fix_high,
-            color: Colors.blue,
-            description: 'Random spell',
-            enabled: _jhoiraEnabled,
-            onToggle: (v) => setState(() => _jhoiraEnabled = v),
+          ButtonSegment(
+            value: GameMode.momirStonehewer,
+            label: Text('MoSto'),
+            icon: Icon(Icons.shield),
           ),
-          _AbilityToggle(
-            name: 'Stonehewer',
-            icon: Icons.shield,
-            color: Colors.orange,
-            description: 'Random equipment',
-            enabled: _stonehewerEnabled,
-            onToggle: (v) => setState(() => _stonehewerEnabled = v),
+          ButtonSegment(
+            value: GameMode.jhoira,
+            label: Text('Jhoira'),
+            icon: Icon(Icons.auto_fix_high),
           ),
         ],
+        selected: {_mode},
+        onSelectionChanged: (selection) {
+          setState(() {
+            _mode = selection.first;
+            _results = [];
+            _error = null;
+            _jhoiraChoosingType = false;
+            _jhoiraOptions = null;
+          });
+        },
       ),
     );
   }
@@ -178,25 +195,126 @@ class _MomirScreenState extends State<MomirScreen> {
             label: _selectedMana.toString(),
             onChanged: (v) => setState(() => _selectedMana = v.round()),
           ),
+          if (_mode == GameMode.momirStonehewer)
+            Text(
+              'Equipment will be MV ≤${_selectedMana - 1 < 0 ? 0 : _selectedMana - 1}',
+              style: TextStyle(
+                fontSize: 12,
+                color: Theme.of(context).colorScheme.outline,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildJhoiraTypeChooser() {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        children: [
+          const Text(
+            'Choose spell type:',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: _isLoading ? null : () => _rollJhoira('instant'),
+                  icon: const Icon(Icons.flash_on),
+                  label: const Text('Instant'),
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    backgroundColor: Colors.blue,
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: _isLoading ? null : () => _rollJhoira('sorcery'),
+                  icon: const Icon(Icons.auto_awesome),
+                  label: const Text('Sorcery'),
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    backgroundColor: Colors.deepPurple,
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );
   }
 
   Widget _buildResults() {
+    if (_error != null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.error_outline,
+              size: 64,
+              color: Theme.of(context).colorScheme.error,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              _error!,
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Jhoira options (pick one of three)
+    if (_jhoiraOptions != null) {
+      return Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Text(
+              'Choose a spell to cast:',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            ),
+          ),
+          Expanded(
+            child: ListView.builder(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              itemCount: _jhoiraOptions!.length,
+              itemBuilder: (context, index) {
+                return _buildJhoiraOptionCard(_jhoiraOptions![index], index);
+              },
+            ),
+          ),
+        ],
+      );
+    }
+
     if (_results.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              Icons.casino,
+              _mode == GameMode.jhoira ? Icons.auto_fix_high : Icons.casino,
               size: 80,
               color: Theme.of(context).colorScheme.outline,
             ),
             const SizedBox(height: 16),
             Text(
-              'Enable abilities above and roll!',
+              _getEmptyStateText(),
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: Theme.of(context).colorScheme.outline,
@@ -211,32 +329,57 @@ class _MomirScreenState extends State<MomirScreen> {
       padding: const EdgeInsets.all(16),
       itemCount: _results.length,
       itemBuilder: (context, index) {
-        final result = _results[index];
-        return _buildResultCard(result, index);
+        return _buildResultCard(_results[index], index);
       },
     );
   }
 
-  Widget _buildResultCard(AbilityResult result, int index) {
-    if (!result.success) {
-      return Card(
-        color: Theme.of(context).colorScheme.errorContainer,
-        child: ListTile(
-          leading: const Icon(Icons.error_outline),
-          title: Text(result.abilityName),
-          subtitle: Text(result.error ?? 'Unknown error'),
-        ),
-      );
+  String _getEmptyStateText() {
+    switch (_mode) {
+      case GameMode.momir:
+        return 'Pay {$_selectedMana} and discard a card\nto create a random creature!';
+      case GameMode.momirStonehewer:
+        return 'Pay {$_selectedMana} and discard a card\nto create a creature with equipment!';
+      case GameMode.jhoira:
+        return 'Discard a card to cast\na random instant or sorcery!';
     }
+  }
 
-    final card = result.card!;
+  Widget _buildJhoiraOptionCard(CardResult result, int index) {
+    return Card(
+      child: InkWell(
+        onTap: () => _selectJhoiraOption(result),
+        borderRadius: BorderRadius.circular(12),
+        child: Column(
+          children: [
+            if (result.card.images.normal != null)
+              ClipRRect(
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                child: Image.network(
+                  result.card.images.normal!,
+                  height: 150,
+                  width: double.infinity,
+                  fit: BoxFit.contain,
+                ),
+              ),
+            ListTile(
+              title: Text(result.card.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+              subtitle: Text(result.card.typeLine ?? ''),
+              trailing: const Icon(Icons.touch_app, color: Colors.green),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildResultCard(CardResult result, int index) {
     final showBw = _previewBwIndex == index && result.bwPreview != null;
     
     return Card(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Card image (color or BW)
           GestureDetector(
             onTap: () => _toggleBwPreview(result, index),
             child: ClipRRect(
@@ -254,26 +397,13 @@ class _MomirScreenState extends State<MomirScreen> {
                         filterQuality: FilterQuality.none,
                       ),
                     )
-                  else if (card.images.normal != null)
+                  else if (result.card.images.normal != null)
                     Image.network(
-                      card.images.normal!,
+                      result.card.images.normal!,
                       height: 250,
                       width: double.infinity,
                       fit: BoxFit.contain,
-                      loadingBuilder: (context, child, progress) {
-                        if (progress == null) return child;
-                        return const SizedBox(
-                          height: 250,
-                          child: Center(child: CircularProgressIndicator()),
-                        );
-                      },
-                      errorBuilder: (context, error, stack) => Container(
-                        height: 100,
-                        color: Colors.grey[800],
-                        child: const Center(child: Icon(Icons.broken_image)),
-                      ),
                     ),
-                  // BW indicator badge
                   Positioned(
                     top: 8,
                     right: 8,
@@ -289,25 +419,37 @@ class _MomirScreenState extends State<MomirScreen> {
                       ),
                     ),
                   ),
+                  Positioned(
+                    top: 8,
+                    left: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: _getSourceColor(result.source),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        result.source,
+                        style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
           ),
-          
-          // Card info + print button
           ListTile(
             title: Text(
-              card.name,
+              result.card.name,
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(result.abilityName),
-                if (card.typeLine != null)
-                  Text(card.typeLine!, style: const TextStyle(fontSize: 12)),
-                if (card.ptString != null)
-                  Text(card.ptString!, style: const TextStyle(fontWeight: FontWeight.bold)),
+                if (result.card.typeLine != null)
+                  Text(result.card.typeLine!, style: const TextStyle(fontSize: 12)),
+                if (result.card.ptString != null)
+                  Text(result.card.ptString!, style: const TextStyle(fontWeight: FontWeight.bold)),
               ],
             ),
             trailing: _bluetooth.currentState == BleConnectionState.connected
@@ -334,12 +476,149 @@ class _MomirScreenState extends State<MomirScreen> {
     );
   }
 
-  void _toggleBwPreview(AbilityResult result, int index) {
+  Color _getSourceColor(String source) {
+    switch (source) {
+      case 'Momir Vig':
+        return Colors.green;
+      case 'Stonehewer':
+        return Colors.orange;
+      case 'Jhoira':
+        return Colors.deepPurple;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  bool _canRoll() {
+    return !_isLoading && _jhoiraOptions == null;
+  }
+
+  void _startRoll() {
+    if (_mode == GameMode.jhoira) {
+      setState(() {
+        _jhoiraChoosingType = true;
+        _results = [];
+        _error = null;
+      });
+    } else {
+      _rollMomir();
+    }
+  }
+
+  Future<void> _rollMomir() async {
+    setState(() {
+      _isLoading = true;
+      _results = [];
+      _error = null;
+    });
+
+    try {
+      final results = <CardResult>[];
+
+      // Get creature
+      final creature = await _scryfall.getRandomCreature(_selectedMana);
+      final creatureImage = await _fetchImage(creature);
+      results.add(CardResult(
+        source: 'Momir Vig',
+        card: creature,
+        imageBytes: creatureImage,
+      ));
+
+      // Get equipment if MoSto mode
+      if (_mode == GameMode.momirStonehewer) {
+        final equipmentMv = _selectedMana - 1;
+        if (equipmentMv >= 0) {
+          try {
+            final equipment = await _scryfall.getRandomEquipment(equipmentMv);
+            final equipmentImage = await _fetchImage(equipment);
+            results.add(CardResult(
+              source: 'Stonehewer',
+              card: equipment,
+              imageBytes: equipmentImage,
+            ));
+          } on NoCardFoundException {
+            // No equipment at this MV, that's okay
+          }
+        }
+      }
+
+      setState(() {
+        _results = results;
+        _isLoading = false;
+      });
+    } on NoCardFoundException catch (e) {
+      setState(() {
+        _error = e.message;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = 'Failed to fetch: $e';
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _rollJhoira(String spellType) async {
+    setState(() {
+      _isLoading = true;
+      _jhoiraChoosingType = false;
+      _jhoiraOptions = null;
+      _error = null;
+    });
+
+    try {
+      final options = <CardResult>[];
+
+      // Get 3 random spells of the chosen type (any MV)
+      for (int i = 0; i < 3; i++) {
+        final spell = spellType == 'instant'
+            ? await _scryfall.getRandomInstant()
+            : await _scryfall.getRandomSorcery();
+        final image = await _fetchImage(spell);
+        options.add(CardResult(
+          source: 'Jhoira',
+          card: spell,
+          imageBytes: image,
+        ));
+      }
+
+      setState(() {
+        _jhoiraOptions = options;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = 'Failed to fetch spells: $e';
+        _isLoading = false;
+      });
+    }
+  }
+
+  void _selectJhoiraOption(CardResult selected) {
+    setState(() {
+      _results = [selected];
+      _jhoiraOptions = null;
+    });
+  }
+
+  Future<Uint8List?> _fetchImage(MtgCard card) async {
+    final imageUrl = card.images.forPrinting;
+    if (imageUrl == null) return null;
+    
+    try {
+      final response = await http.get(Uri.parse(imageUrl));
+      if (response.statusCode == 200) {
+        return response.bodyBytes;
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  void _toggleBwPreview(CardResult result, int index) {
     if (_previewBwIndex == index) {
-      // Toggle off
       setState(() => _previewBwIndex = -1);
     } else {
-      // Generate BW preview if needed
       if (result.bwPreview == null && result.imageBytes != null) {
         try {
           result.bwPreview = ImageProcessor.createPreview(result.imageBytes!);
@@ -354,91 +633,7 @@ class _MomirScreenState extends State<MomirScreen> {
     }
   }
 
-  bool _canRoll() {
-    return !_isLoading && (_momirEnabled || _jhoiraEnabled || _stonehewerEnabled);
-  }
-
-  Future<void> _roll() async {
-    setState(() {
-      _isLoading = true;
-      _results = [];
-    });
-
-    final results = <AbilityResult>[];
-
-    // Momir - Random creature at MV X
-    if (_momirEnabled) {
-      results.add(await _fetchCard(
-        'Momir Vig',
-        () => _scryfall.getRandomCreature(_selectedMana),
-      ));
-    }
-
-    // Jhoira - Random instant/sorcery at MV X
-    if (_jhoiraEnabled) {
-      results.add(await _fetchCard(
-        'Jhoira',
-        () => _scryfall.getRandomInstantOrSorcery(_selectedMana),
-      ));
-    }
-
-    // Stonehewer - Random equipment at MV <= creature's MV
-    if (_stonehewerEnabled) {
-      // Use the creature's MV if we got one, otherwise use selected mana
-      final creatureMv = _momirEnabled && results.first.card != null
-          ? results.first.card!.cmc ?? _selectedMana
-          : _selectedMana;
-      
-      results.add(await _fetchCard(
-        'Stonehewer Giant',
-        () => _scryfall.getRandomEquipment(creatureMv),
-      ));
-    }
-
-    setState(() {
-      _results = results;
-      _isLoading = false;
-    });
-  }
-
-  Future<AbilityResult> _fetchCard(
-    String abilityName,
-    Future<MtgCard> Function() fetcher,
-  ) async {
-    try {
-      final card = await fetcher();
-      
-      // Fetch card image
-      Uint8List? imageBytes;
-      final imageUrl = card.images.forPrinting;
-      if (imageUrl != null) {
-        try {
-          final response = await http.get(Uri.parse(imageUrl));
-          if (response.statusCode == 200) {
-            imageBytes = response.bodyBytes;
-          }
-        } catch (_) {}
-      }
-      
-      return AbilityResult(
-        abilityName: abilityName,
-        card: card,
-        imageBytes: imageBytes,
-      );
-    } on NoCardFoundException catch (e) {
-      return AbilityResult(
-        abilityName: abilityName,
-        error: e.message,
-      );
-    } catch (e) {
-      return AbilityResult(
-        abilityName: abilityName,
-        error: 'Failed to fetch: $e',
-      );
-    }
-  }
-
-  Future<void> _printCard(AbilityResult result, int index) async {
+  Future<void> _printCard(CardResult result, int index) async {
     if (result.imageBytes == null) return;
     
     setState(() {
@@ -462,9 +657,7 @@ class _MomirScreenState extends State<MomirScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(success 
-                ? 'Printed ${result.card!.name}!' 
-                : 'Print failed'),
+            content: Text(success ? 'Printed ${result.card.name}!' : 'Print failed'),
             backgroundColor: success ? Colors.green : Colors.red,
           ),
         );
@@ -487,44 +680,32 @@ class _MomirScreenState extends State<MomirScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Momir Abilities'),
+        title: const Text('Game Modes'),
         content: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              _buildAbilityInfo(
-                'Momir Vig',
+              _buildModeInfo(
+                'Momir',
                 Icons.pets,
                 Colors.green,
                 '{X}, Discard a card: Create a token copy of a random creature with mana value X.',
               ),
               const SizedBox(height: 16),
-              _buildAbilityInfo(
-                'Jhoira',
-                Icons.auto_fix_high,
-                Colors.blue,
-                '{X}, Discard a card: Cast a random instant or sorcery with mana value X.',
-              ),
-              const SizedBox(height: 16),
-              _buildAbilityInfo(
-                'Stonehewer Giant',
+              _buildModeInfo(
+                'MoSto (Momir + Stonehewer)',
                 Icons.shield,
                 Colors.orange,
-                'When you create a creature token, you may search for a random Equipment with mana value ≤ that creature\'s mana value and attach it.',
+                'Same as Momir, plus: Search for a random Equipment with MV ≤ (X-1) and attach it to the creature.',
               ),
               const SizedBox(height: 16),
-              const Divider(),
-              const SizedBox(height: 8),
-              const Text(
-                'Combinations',
-                style: TextStyle(fontWeight: FontWeight.bold),
+              _buildModeInfo(
+                'Jhoira',
+                Icons.auto_fix_high,
+                Colors.deepPurple,
+                'Discard a card: Choose instant or sorcery. Reveal 3 random spells of that type. Cast one of them without paying its mana cost.',
               ),
-              const SizedBox(height: 8),
-              const Text('• Mo = Momir only'),
-              const Text('• MoJo = Momir + Jhoira'),
-              const Text('• MoSto = Momir + Stonehewer'),
-              const Text('• MoJoSto = All three!'),
             ],
           ),
         ),
@@ -538,7 +719,7 @@ class _MomirScreenState extends State<MomirScreen> {
     );
   }
 
-  Widget _buildAbilityInfo(String name, IconData icon, Color color, String description) {
+  Widget _buildModeInfo(String name, IconData icon, Color color, String description) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -555,63 +736,6 @@ class _MomirScreenState extends State<MomirScreen> {
           ),
         ),
       ],
-    );
-  }
-}
-
-class _AbilityToggle extends StatelessWidget {
-  final String name;
-  final IconData icon;
-  final Color color;
-  final String description;
-  final bool enabled;
-  final ValueChanged<bool> onToggle;
-
-  const _AbilityToggle({
-    required this.name,
-    required this.icon,
-    required this.color,
-    required this.description,
-    required this.enabled,
-    required this.onToggle,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => onToggle(!enabled),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: enabled ? color.withValues(alpha: 0.2) : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: enabled ? color : Theme.of(context).colorScheme.outline,
-            width: enabled ? 2 : 1,
-          ),
-        ),
-        child: Column(
-          children: [
-            Icon(icon, color: enabled ? color : Theme.of(context).colorScheme.outline),
-            const SizedBox(height: 4),
-            Text(
-              name,
-              style: TextStyle(
-                fontWeight: enabled ? FontWeight.bold : FontWeight.normal,
-                color: enabled ? color : Theme.of(context).colorScheme.outline,
-              ),
-            ),
-            Text(
-              description,
-              style: TextStyle(
-                fontSize: 10,
-                color: enabled ? color.withValues(alpha: 0.8) : Theme.of(context).colorScheme.outline,
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
