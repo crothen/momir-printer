@@ -1,4 +1,4 @@
-package com.example.momir_printer
+package ch.mini_printer.chris
 
 import io.flutter.embedding.android.FlutterActivity
 

@@ -14,6 +14,17 @@ subprojects {
 }
 subprojects {
     project.evaluationDependsOn(":app")
+    
+    // Fix for old plugins missing namespace (AGP 8+)
+    project.plugins.whenPluginAdded {
+        if (this is com.android.build.gradle.LibraryPlugin) {
+            project.extensions.configure<com.android.build.gradle.LibraryExtension> {
+                if (namespace == null) {
+                    namespace = "io.github.${project.name.replace("-", "_")}"
+                }
+            }
+        }
+    }
 }
 
 tasks.register<Delete>("clean") {

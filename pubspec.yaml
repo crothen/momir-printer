@@ -37,10 +37,11 @@ dependencies:
   
   # Bluetooth
   flutter_blue_plus: ^1.31.0        # BLE for Phomemo T02
-  flutter_bluetooth_serial: ^0.4.0  # Classic BT for TiMini printers
+  # flutter_bluetooth_serial: ^0.4.0  # Classic BT - DISABLED (incompatible with AGP 8+)
   
   # Image processing
   image: ^4.1.0                     # Grayscale + dithering
+  image_picker: ^1.0.7              # Pick images from gallery/camera
   
   # Networking
   http: ^1.2.0                      # Scryfall API

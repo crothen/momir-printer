@@ -1,4 +1,9 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import '../services/bluetooth_service.dart';
+import '../widgets/printer_dialog.dart';
+import 'photo_print_screen.dart';
+import 'momir_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -8,7 +13,25 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  String? _connectedPrinter;
+  final _bluetooth = BleManager();
+  StreamSubscription<BleConnectionState>? _connectionSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    _connectionSubscription = _bluetooth.connectionState.listen((_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _connectionSubscription?.cancel();
+    super.dispose();
+  }
+
+  String? get _connectedPrinter => _bluetooth.connectedDeviceName;
+  bool get _isConnected => _bluetooth.currentState == BleConnectionState.connected;
 
   @override
   Widget build(BuildContext context) {
@@ -19,8 +42,8 @@ class _HomeScreenState extends State<HomeScreen> {
           // Printer connection status
           IconButton(
             icon: Icon(
-              _connectedPrinter != null ? Icons.print : Icons.print_disabled,
-              color: _connectedPrinter != null ? Colors.green : null,
+              _isConnected ? Icons.print : Icons.print_disabled,
+              color: _isConnected ? Colors.green : null,
             ),
             onPressed: _showPrinterDialog,
             tooltip: _connectedPrinter ?? 'No printer connected',
@@ -36,13 +59,23 @@ class _HomeScreenState extends State<HomeScreen> {
             Card(
               child: ListTile(
                 leading: Icon(
-                  _connectedPrinter != null ? Icons.bluetooth_connected : Icons.bluetooth_disabled,
-                  color: _connectedPrinter != null ? Colors.blue : Colors.grey,
+                  _isConnected ? Icons.bluetooth_connected : Icons.bluetooth_disabled,
+                  color: _isConnected ? Colors.blue : Colors.grey,
                 ),
                 title: Text(_connectedPrinter ?? 'No printer connected'),
-                subtitle: _connectedPrinter != null 
+                subtitle: _isConnected 
                     ? const Text('Ready to print')
                     : const Text('Tap to connect'),
+                trailing: _isConnected
+                    ? IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () async {
+                          await _bluetooth.disconnect();
+                          setState(() {});
+                        },
+                        tooltip: 'Disconnect',
+                      )
+                    : null,
                 onTap: _showPrinterDialog,
               ),
             ),
@@ -72,12 +105,14 @@ class _HomeScreenState extends State<HomeScreen> {
                     title: 'Momir Vig',
                     icon: Icons.casino,
                     color: Colors.purple,
+                    enabled: _isConnected,
                     onTap: () => _navigateToMode('momir'),
                   ),
                   _ModeCard(
                     title: 'MoJoSto',
                     icon: Icons.auto_awesome,
                     color: Colors.orange,
+                    enabled: _isConnected,
                     onTap: () => _navigateToMode('mojosto'),
                   ),
                   _ModeCard(
@@ -96,25 +131,36 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _showPrinterDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Connect Printer'),
-        content: const Text('Bluetooth scanning not yet implemented.\n\nThis will show available printers.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
-          ),
-        ],
-      ),
-    );
+    PrinterDialog.show(context).then((_) {
+      if (mounted) setState(() {});
+    });
   }
 
   void _navigateToMode(String mode) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('$mode mode not yet implemented')),
-    );
+    switch (mode) {
+      case 'photo':
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const PhotoPrintScreen()),
+        );
+        break;
+      case 'momir':
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const MomirScreen()),
+        );
+        break;
+      case 'mojosto':
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('MoJoSto mode coming soon!')),
+        );
+        break;
+      case 'settings':
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Settings coming soon!')),
+        );
+        break;
+    }
   }
 }
 
@@ -123,34 +169,46 @@ class _ModeCard extends StatelessWidget {
   final IconData icon;
   final Color color;
   final VoidCallback onTap;
+  final bool enabled;
 
   const _ModeCard({
     required this.title,
     required this.icon,
     required this.color,
     required this.onTap,
+    this.enabled = true,
   });
 
   @override
   Widget build(BuildContext context) {
+    final effectiveColor = enabled ? color : Colors.grey;
+    
     return Card(
-      color: color.withValues(alpha: 0.2),
+      color: effectiveColor.withValues(alpha: enabled ? 0.2 : 0.1),
       child: InkWell(
-        onTap: onTap,
+        onTap: enabled ? onTap : null,
         borderRadius: BorderRadius.circular(12),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 48, color: color),
+            Icon(icon, size: 48, color: effectiveColor),
             const SizedBox(height: 8),
             Text(
               title,
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
-                color: color,
+                color: effectiveColor,
               ),
             ),
+            if (!enabled)
+              Text(
+                'Connect printer first',
+                style: TextStyle(
+                  fontSize: 10,
+                  color: effectiveColor.withValues(alpha: 0.7),
+                ),
+              ),
           ],
         ),
       ),

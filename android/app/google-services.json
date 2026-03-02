@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "558960927637",
+    "firebase_url": "https://web-sandbox-crothen-default-rtdb.europe-west1.firebasedatabase.app",
+    "project_id": "web-sandbox-crothen",
+    "storage_bucket": "web-sandbox-crothen.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:558960927637:android:f76c73b7ec24f0db2b8c9c",
+        "android_client_info": {
+          "package_name": "ch.mini_printer.chris"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDDk81xHg2eMz5KjrUIZZWDBKjZZo4gNDs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
