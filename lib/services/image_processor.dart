@@ -20,7 +20,7 @@ class ImageProcessor {
   static Uint8List processForPrinting(
     Uint8List imageBytes, {
     int width = defaultWidth,
-    DitheringAlgorithm algorithm = DitheringAlgorithm.floydSteinberg,
+    DitheringAlgorithm algorithm = DitheringAlgorithm.atkinson,
     double contrast = 1.0,
     double brightness = 0.0,
   }) {
@@ -52,7 +52,7 @@ class ImageProcessor {
   static Uint8List createPreview(
     Uint8List imageBytes, {
     int width = defaultWidth,
-    DitheringAlgorithm algorithm = DitheringAlgorithm.floydSteinberg,
+    DitheringAlgorithm algorithm = DitheringAlgorithm.atkinson,
     double contrast = 1.0,
     double brightness = 0.0,
   }) {

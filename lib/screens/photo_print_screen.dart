@@ -27,7 +27,7 @@ class _PhotoPrintScreenState extends State<PhotoPrintScreen> {
   double _density = 0.6;
   double _contrast = 1.0;
   double _brightness = 0.0;
-  DitheringAlgorithm _algorithm = DitheringAlgorithm.floydSteinberg;
+  DitheringAlgorithm _algorithm = DitheringAlgorithm.atkinson;
 
   @override
   Widget build(BuildContext context) {
