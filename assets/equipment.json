@@ -1,0 +1,1190 @@
+[
+  {
+    "name": "*Ammunition*",
+    "category": "Adventuring Gear",
+    "cost": "",
+    "weight": "",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "*Arcane focus*",
+    "category": "Adventuring Gear",
+    "cost": "",
+    "weight": "",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "*Druidic focus*",
+    "category": "Adventuring Gear",
+    "cost": "",
+    "weight": "",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "*Holy symbol*",
+    "category": "Adventuring Gear",
+    "cost": "",
+    "weight": "",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "*Saddle*",
+    "category": "Tack, Harness, and Drawn Vehicles",
+    "cost": "",
+    "weight": "",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Abacus",
+    "category": "Adventuring Gear",
+    "cost": "2 gp",
+    "weight": "2 lb.",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Acid (vial)",
+    "category": "Adventuring Gear",
+    "cost": "25 gp",
+    "weight": "1 lb.",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Alchemist\u2019s fire (flask)",
+    "category": "Adventuring Gear",
+    "cost": "50 gp",
+    "weight": "1 lb.",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Amulet",
+    "category": "Adventuring Gear",
+    "cost": "5 gp",
+    "weight": "1 lb.",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Antitoxin (vial)",
+    "category": "Adventuring Gear",
+    "cost": "50 gp",
+    "weight": "\u2014",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Arrows (20)",
+    "category": "Adventuring Gear",
+    "cost": "1 gp",
+    "weight": "1 lb.",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Backpack",
+    "category": "Adventuring Gear",
+    "cost": "2 gp",
+    "weight": "5 lb.",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Ball bearings (bag of 1,000)",
+    "category": "Adventuring Gear",
+    "cost": "1 gp",
+    "weight": "2 lb.",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Barding",
+    "category": "Tack, Harness, and Drawn Vehicles",
+    "cost": "\u00d74",
+    "weight": "\u00d72",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Barrel",
+    "category": "Adventuring Gear",
+    "cost": "2 gp",
+    "weight": "70 lb.",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Basket",
+    "category": "Adventuring Gear",
+    "cost": "4 sp",
+    "weight": "2 lb.",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Bedroll",
+    "category": "Adventuring Gear",
+    "cost": "1 gp",
+    "weight": "7 lb.",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Bell",
+    "category": "Adventuring Gear",
+    "cost": "1 gp",
+    "weight": "\u2014",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Bit and bridle",
+    "category": "Tack, Harness, and Drawn Vehicles",
+    "cost": "2 gp",
+    "weight": "1 lb.",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Blanket",
+    "category": "Adventuring Gear",
+    "cost": "5 sp",
+    "weight": "3 lb.",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Block and tackle",
+    "category": "Adventuring Gear",
+    "cost": "1 gp",
+    "weight": "5 lb.",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Blowgun needles (50)",
+    "category": "Adventuring Gear",
+    "cost": "1 gp",
+    "weight": "1 lb.",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Book",
+    "category": "Adventuring Gear",
+    "cost": "25 gp",
+    "weight": "5 lb.",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Bottle, glass",
+    "category": "Adventuring Gear",
+    "cost": "2 gp",
+    "weight": "2 lb.",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Bucket",
+    "category": "Adventuring Gear",
+    "cost": "5 cp",
+    "weight": "2 lb.",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Caltrops (bag of 20)",
+    "category": "Adventuring Gear",
+    "cost": "1 gp",
+    "weight": "2 lb.",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Camel",
+    "category": "Mounts and Other Animals",
+    "cost": "50 gp",
+    "weight": "",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Candle",
+    "category": "Adventuring Gear",
+    "cost": "1 cp",
+    "weight": "\u2014",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Carriage",
+    "category": "Tack, Harness, and Drawn Vehicles",
+    "cost": "100 gp",
+    "weight": "600 lb.",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Cart",
+    "category": "Tack, Harness, and Drawn Vehicles",
+    "cost": "15 gp",
+    "weight": "200 lb.",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Case, crossbow bolt",
+    "category": "Adventuring Gear",
+    "cost": "1 gp",
+    "weight": "1 lb.",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Case, map or scroll",
+    "category": "Adventuring Gear",
+    "cost": "1 gp",
+    "weight": "1 lb.",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Chain (10 feet)",
+    "category": "Adventuring Gear",
+    "cost": "5 gp",
+    "weight": "10 lb.",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Chalk (1 piece)",
+    "category": "Adventuring Gear",
+    "cost": "1 cp",
+    "weight": "\u2014",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Chariot",
+    "category": "Tack, Harness, and Drawn Vehicles",
+    "cost": "250 gp",
+    "weight": "100 lb.",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Chest",
+    "category": "Adventuring Gear",
+    "cost": "5 gp",
+    "weight": "25 lb.",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Climber\u2019s kit",
+    "category": "Adventuring Gear",
+    "cost": "25 gp",
+    "weight": "12 lb.",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Clothes, common",
+    "category": "Adventuring Gear",
+    "cost": "5 sp",
+    "weight": "3 lb.",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Clothes, costume",
+    "category": "Adventuring Gear",
+    "cost": "5 gp",
+    "weight": "4 lb.",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Clothes, fine",
+    "category": "Adventuring Gear",
+    "cost": "15 gp",
+    "weight": "6 lb.",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Clothes, traveler\u2019s",
+    "category": "Adventuring Gear",
+    "cost": "2 gp",
+    "weight": "4 lb.",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Component pouch",
+    "category": "Adventuring Gear",
+    "cost": "25 gp",
+    "weight": "2 lb.",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Crossbow bolts (20)",
+    "category": "Adventuring Gear",
+    "cost": "1 gp",
+    "weight": "1\u00bd lb.",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Crowbar",
+    "category": "Adventuring Gear",
+    "cost": "2 gp",
+    "weight": "5 lb.",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Crystal",
+    "category": "Adventuring Gear",
+    "cost": "10 gp",
+    "weight": "1 lb.",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Donkey or mule",
+    "category": "Mounts and Other Animals",
+    "cost": "8 gp",
+    "weight": "",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Elephant",
+    "category": "Mounts and Other Animals",
+    "cost": "200 gp",
+    "weight": "",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Emblem",
+    "category": "Adventuring Gear",
+    "cost": "5 gp",
+    "weight": "\u2014",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Exotic",
+    "category": "Tack, Harness, and Drawn Vehicles",
+    "cost": "60 gp",
+    "weight": "40 lb.",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Feed (per day)",
+    "category": "Tack, Harness, and Drawn Vehicles",
+    "cost": "5 cp",
+    "weight": "10 lb.",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Fishing tackle",
+    "category": "Adventuring Gear",
+    "cost": "1 gp",
+    "weight": "4 lb.",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Flask or tankard",
+    "category": "Adventuring Gear",
+    "cost": "2 cp",
+    "weight": "1 lb.",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Galley",
+    "category": "Waterborne Vehicles",
+    "cost": "30,000 gp",
+    "weight": "",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Grappling hook",
+    "category": "Adventuring Gear",
+    "cost": "2 gp",
+    "weight": "4 lb.",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Hammer",
+    "category": "Adventuring Gear",
+    "cost": "1 gp",
+    "weight": "3 lb.",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Hammer, sledge",
+    "category": "Adventuring Gear",
+    "cost": "2 gp",
+    "weight": "10 lb.",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Healer\u2019s kit",
+    "category": "Adventuring Gear",
+    "cost": "5 gp",
+    "weight": "3 lb.",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Holy water (flask)",
+    "category": "Adventuring Gear",
+    "cost": "25 gp",
+    "weight": "1 lb.",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Horse, draft",
+    "category": "Mounts and Other Animals",
+    "cost": "50 gp",
+    "weight": "",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Horse, riding",
+    "category": "Mounts and Other Animals",
+    "cost": "75 gp",
+    "weight": "",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Hourglass",
+    "category": "Adventuring Gear",
+    "cost": "25 gp",
+    "weight": "1 lb.",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Hunting trap",
+    "category": "Adventuring Gear",
+    "cost": "5 gp",
+    "weight": "25 lb.",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Ink (1 ounce bottle)",
+    "category": "Adventuring Gear",
+    "cost": "10 gp",
+    "weight": "\u2014",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Ink pen",
+    "category": "Adventuring Gear",
+    "cost": "2 cp",
+    "weight": "\u2014",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Jug or pitcher",
+    "category": "Adventuring Gear",
+    "cost": "2 cp",
+    "weight": "4 lb.",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Keelboat",
+    "category": "Waterborne Vehicles",
+    "cost": "3,000 gp",
+    "weight": "",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Ladder (10-foot)",
+    "category": "Adventuring Gear",
+    "cost": "1 sp",
+    "weight": "25 lb.",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Lamp",
+    "category": "Adventuring Gear",
+    "cost": "5 sp",
+    "weight": "1 lb.",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Lantern, bullseye",
+    "category": "Adventuring Gear",
+    "cost": "10 gp",
+    "weight": "2 lb.",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Lantern, hooded",
+    "category": "Adventuring Gear",
+    "cost": "5 gp",
+    "weight": "2 lb.",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Lock",
+    "category": "Adventuring Gear",
+    "cost": "10 gp",
+    "weight": "1 lb.",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Longship",
+    "category": "Waterborne Vehicles",
+    "cost": "10,000 gp",
+    "weight": "",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Magnifying glass",
+    "category": "Adventuring Gear",
+    "cost": "100 gp",
+    "weight": "\u2014",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Manacles",
+    "category": "Adventuring Gear",
+    "cost": "2 gp",
+    "weight": "6 lb.",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Mastiff",
+    "category": "Mounts and Other Animals",
+    "cost": "25 gp",
+    "weight": "",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Mess kit",
+    "category": "Adventuring Gear",
+    "cost": "2 sp",
+    "weight": "1 lb.",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Military",
+    "category": "Tack, Harness, and Drawn Vehicles",
+    "cost": "20 gp",
+    "weight": "30 lb.",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Mirror, steel",
+    "category": "Adventuring Gear",
+    "cost": "5 gp",
+    "weight": "1/2 lb.",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Oil (flask)",
+    "category": "Adventuring Gear",
+    "cost": "1 sp",
+    "weight": "1 lb.",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Orb",
+    "category": "Adventuring Gear",
+    "cost": "20 gp",
+    "weight": "3 lb.",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Pack",
+    "category": "Tack, Harness, and Drawn Vehicles",
+    "cost": "5 gp",
+    "weight": "15 lb.",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Paper (one sheet)",
+    "category": "Adventuring Gear",
+    "cost": "2 sp",
+    "weight": "\u2014",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Parchment (one sheet)",
+    "category": "Adventuring Gear",
+    "cost": "1 sp",
+    "weight": "\u2014",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Perfume (vial)",
+    "category": "Adventuring Gear",
+    "cost": "5 gp",
+    "weight": "\u2014",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Pick, miner\u2019s",
+    "category": "Adventuring Gear",
+    "cost": "2 gp",
+    "weight": "10 lb.",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Piton",
+    "category": "Adventuring Gear",
+    "cost": "5 cp",
+    "weight": "1/4 lb.",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Poison, basic (vial)",
+    "category": "Adventuring Gear",
+    "cost": "100 gp",
+    "weight": "\u2014",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Pole (10-foot)",
+    "category": "Adventuring Gear",
+    "cost": "5 cp",
+    "weight": "7 lb.",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Pony",
+    "category": "Mounts and Other Animals",
+    "cost": "30 gp",
+    "weight": "",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Pot, iron",
+    "category": "Adventuring Gear",
+    "cost": "2 gp",
+    "weight": "10 lb.",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Potion of healing 5",
+    "category": "Adventuring Gear",
+    "cost": "0 gp",
+    "weight": "1/2 lb.",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Pouch",
+    "category": "Adventuring Gear",
+    "cost": "5 sp",
+    "weight": "1 lb.",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Quiver",
+    "category": "Adventuring Gear",
+    "cost": "1 gp",
+    "weight": "1 lb.",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Ram, portable",
+    "category": "Adventuring Gear",
+    "cost": "4 gp",
+    "weight": "35 lb.",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Rations (1 day)",
+    "category": "Adventuring Gear",
+    "cost": "5 sp",
+    "weight": "2 lb.",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Reliquary",
+    "category": "Adventuring Gear",
+    "cost": "5 gp",
+    "weight": "2 lb.",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Riding",
+    "category": "Tack, Harness, and Drawn Vehicles",
+    "cost": "10 gp",
+    "weight": "25 lb.",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Robes",
+    "category": "Adventuring Gear",
+    "cost": "1 gp",
+    "weight": "4 lb.",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Rod",
+    "category": "Adventuring Gear",
+    "cost": "10 gp",
+    "weight": "2 lb.",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Rope, hempen (50 feet)",
+    "category": "Adventuring Gear",
+    "cost": "1 gp",
+    "weight": "10 lb.",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Rope, silk (50 feet)",
+    "category": "Adventuring Gear",
+    "cost": "10 gp",
+    "weight": "5 lb.",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Rowboat",
+    "category": "Waterborne Vehicles",
+    "cost": "50 gp",
+    "weight": "",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Sack",
+    "category": "Adventuring Gear",
+    "cost": "1 cp",
+    "weight": "1/2 lb.",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Saddlebags",
+    "category": "Tack, Harness, and Drawn Vehicles",
+    "cost": "4 gp",
+    "weight": "8 lb.",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Sailing ship",
+    "category": "Waterborne Vehicles",
+    "cost": "10,000 gp",
+    "weight": "",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Scale, merchant\u2019s",
+    "category": "Adventuring Gear",
+    "cost": "5 gp",
+    "weight": "3 lb.",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Sealing wax",
+    "category": "Adventuring Gear",
+    "cost": "5 sp",
+    "weight": "\u2014",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Shovel",
+    "category": "Adventuring Gear",
+    "cost": "2 gp",
+    "weight": "5 lb.",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Signal whistle",
+    "category": "Adventuring Gear",
+    "cost": "5 cp",
+    "weight": "\u2014",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Signet ring",
+    "category": "Adventuring Gear",
+    "cost": "5 gp",
+    "weight": "\u2014",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Sled",
+    "category": "Tack, Harness, and Drawn Vehicles",
+    "cost": "20 gp",
+    "weight": "300 lb.",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Sling bullets (20)",
+    "category": "Adventuring Gear",
+    "cost": "4 cp",
+    "weight": "1\u00bd lb.",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Soap",
+    "category": "Adventuring Gear",
+    "cost": "2 cp",
+    "weight": "\u2014",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Spellbook",
+    "category": "Adventuring Gear",
+    "cost": "50 gp",
+    "weight": "3 lb.",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Spikes, iron (10)",
+    "category": "Adventuring Gear",
+    "cost": "1 gp",
+    "weight": "5 lb.",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Sprig of mistletoe",
+    "category": "Adventuring Gear",
+    "cost": "1 gp",
+    "weight": "\u2014",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Spyglass",
+    "category": "Adventuring Gear",
+    "cost": "1,000 gp",
+    "weight": "1 lb.",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Stabling (per day)",
+    "category": "Tack, Harness, and Drawn Vehicles",
+    "cost": "5 sp",
+    "weight": "\u2014",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Staff",
+    "category": "Adventuring Gear",
+    "cost": "5 gp",
+    "weight": "4 lb.",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Tent, two-person",
+    "category": "Adventuring Gear",
+    "cost": "2 gp",
+    "weight": "20 lb.",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Tinderbox",
+    "category": "Adventuring Gear",
+    "cost": "5 sp",
+    "weight": "1 lb.",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Torch",
+    "category": "Adventuring Gear",
+    "cost": "1 cp",
+    "weight": "1 lb.",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Totem",
+    "category": "Adventuring Gear",
+    "cost": "1 gp",
+    "weight": "\u2014",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Vial",
+    "category": "Adventuring Gear",
+    "cost": "1 gp",
+    "weight": "\u2014",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Wagon",
+    "category": "Tack, Harness, and Drawn Vehicles",
+    "cost": "35 gp",
+    "weight": "400 lb.",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Wand",
+    "category": "Adventuring Gear",
+    "cost": "10 gp",
+    "weight": "1 lb.",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Warhorse",
+    "category": "Mounts and Other Animals",
+    "cost": "400 gp",
+    "weight": "",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Warship",
+    "category": "Waterborne Vehicles",
+    "cost": "25,000 gp",
+    "weight": "",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Waterskin",
+    "category": "Adventuring Gear",
+    "cost": "2 sp",
+    "weight": "5 lb. (full)",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Whetstone",
+    "category": "Adventuring Gear",
+    "cost": "1 cp",
+    "weight": "1 lb.",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Wooden staff",
+    "category": "Adventuring Gear",
+    "cost": "5 gp",
+    "weight": "4 lb.",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  },
+  {
+    "name": "Yew wand",
+    "category": "Adventuring Gear",
+    "cost": "10 gp",
+    "weight": "1 lb.",
+    "damage": null,
+    "ac": null,
+    "properties": null
+  }
+]

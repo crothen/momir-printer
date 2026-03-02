@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'spells_screen.dart';
 import 'monsters_screen.dart';
 import 'magic_items_screen.dart';
+import 'equipment_screen.dart';
 
 class DndScreen extends StatelessWidget {
   const DndScreen({super.key});
@@ -60,13 +61,13 @@ class DndScreen extends StatelessWidget {
                   ),
                   _CategoryCard(
                     title: 'Equipment',
-                    subtitle: 'Coming soon',
+                    subtitle: '132 items',
                     icon: Icons.shield,
-                    color: Colors.grey,
-                    onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Equipment coming soon!')),
+                    color: Colors.teal,
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const EquipmentScreen()),
                     ),
-                    enabled: false,
                   ),
                 ],
               ),
