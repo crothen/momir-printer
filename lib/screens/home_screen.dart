@@ -5,6 +5,7 @@ import '../widgets/printer_dialog.dart';
 import 'photo_print_screen.dart';
 import 'momir_screen.dart';
 import 'dnd_screen.dart';
+import 'deck_printer_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -110,6 +111,13 @@ class _HomeScreenState extends State<HomeScreen> {
                     onTap: () => _navigateToMode('momir'),
                   ),
                   _ModeCard(
+                    title: 'Deck Printer',
+                    subtitle: 'MTGGoldfish proxies',
+                    icon: Icons.style,
+                    color: Colors.indigo,
+                    onTap: () => _navigateToMode('deck'),
+                  ),
+                  _ModeCard(
                     title: 'D&D',
                     subtitle: 'Spells • Monsters • Items',
                     icon: Icons.menu_book,
@@ -143,6 +151,12 @@ class _HomeScreenState extends State<HomeScreen> {
         Navigator.push(
           context,
           MaterialPageRoute(builder: (context) => const MomirScreen()),
+        );
+        break;
+      case 'deck':
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const DeckPrinterScreen()),
         );
         break;
       case 'dnd':
