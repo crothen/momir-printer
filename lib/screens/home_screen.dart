@@ -7,6 +7,7 @@ import 'momir_screen.dart';
 import 'dnd_screen.dart';
 import 'deck_printer_screen.dart';
 import 'werewolf_screen.dart';
+import 'printer_test_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -132,6 +133,13 @@ class _HomeScreenState extends State<HomeScreen> {
                     color: Colors.blueGrey,
                     onTap: () => _navigateToMode('werewolf'),
                   ),
+                  _ModeCard(
+                    title: 'Printer Test',
+                    subtitle: 'Debug & settings',
+                    icon: Icons.bug_report,
+                    color: Colors.grey,
+                    onTap: () => _navigateToMode('test'),
+                  ),
                 ],
               ),
             ),
@@ -177,6 +185,12 @@ class _HomeScreenState extends State<HomeScreen> {
         Navigator.push(
           context,
           MaterialPageRoute(builder: (context) => const WerewolfScreen()),
+        );
+        break;
+      case 'test':
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const PrinterTestScreen()),
         );
         break;
       case 'settings':
