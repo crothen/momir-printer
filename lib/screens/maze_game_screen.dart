@@ -73,8 +73,11 @@ class MazeSecret {
     'Teleport to any tile with a 💀 on it.',
     'Teleport to any tile with a 💎 on it.',
     'Teleport to any tile with a 👁️ on it.',
+    'Teleport to any tile with a 🐀 on it.',
+    'Teleport to any tile with a 🪙 on it.',
     'Steal a collected icon from another player.',
     'Discard one of your collected icons to take 2 extra actions.',
+    'Switch 2 placed tiles. Both must still form at least 1 passage.',
   ];
 }
 
@@ -855,15 +858,18 @@ class _MazeGameScreenState extends State<MazeGameScreen> {
 
   /// Draw rules on the start tile
   void _drawStartTileRules(Canvas canvas, double size, Color color) {
-    // Draw a rules box in the center
+    // Draw a larger rules box in the center
     final bgColor = _blackBackground ? const Color(0xFF000000) : const Color(0xFFFFFFFF);
     
+    const boxWidth = 240.0;
+    const boxHeight = 180.0;
+    
     canvas.drawRect(
-      Rect.fromLTWH(size / 2 - 90, size / 2 - 60, 180, 120),
+      Rect.fromLTWH(size / 2 - boxWidth / 2, size / 2 - boxHeight / 2, boxWidth, boxHeight),
       Paint()..color = bgColor,
     );
     canvas.drawRect(
-      Rect.fromLTWH(size / 2 - 90, size / 2 - 60, 180, 120),
+      Rect.fromLTWH(size / 2 - boxWidth / 2, size / 2 - boxHeight / 2, boxWidth, boxHeight),
       Paint()
         ..color = color
         ..style = PaintingStyle.stroke
@@ -872,23 +878,39 @@ class _MazeGameScreenState extends State<MazeGameScreen> {
 
     final titleStyle = ui.TextStyle(
       color: color,
-      fontSize: 14,
+      fontSize: 13,
       fontWeight: ui.FontWeight.bold,
     );
-    final titlePara = _buildParagraph('MAZE EXPLORER', titleStyle, 170, textAlign: ui.TextAlign.center);
-    canvas.drawParagraph(titlePara, Offset(size / 2 - 85, size / 2 - 55));
+    final titlePara = _buildParagraph('MAZE EXPLORER', titleStyle, boxWidth - 20, textAlign: ui.TextAlign.center);
+    canvas.drawParagraph(titlePara, Offset(size / 2 - boxWidth / 2 + 10, size / 2 - boxHeight / 2 + 8));
+
+    final winStyle = ui.TextStyle(
+      color: color,
+      fontSize: 10,
+      fontWeight: ui.FontWeight.bold,
+    );
+    final winPara = _buildParagraph('🏆 Collect 3 matching icons to win!', winStyle, boxWidth - 20, textAlign: ui.TextAlign.center);
+    canvas.drawParagraph(winPara, Offset(size / 2 - boxWidth / 2 + 10, size / 2 - boxHeight / 2 + 26));
 
     final rulesStyle = ui.TextStyle(
       color: color,
-      fontSize: 10,
+      fontSize: 9,
     );
     final rulesPara = _buildParagraph(
-      '🏆 Collect 3 matching icons!\n'
-      'Actions: MOVE or MAP\n'
-      '⬆ = must orient North\n'
-      '💎💀🐀🪙👁️',
-      rulesStyle, 170, textAlign: ui.TextAlign.center);
-    canvas.drawParagraph(rulesPara, Offset(size / 2 - 85, size / 2 - 35));
+      'MOVE: Move 1 tile\n'
+      'MAP: Place a tile to expand the maze.\n'
+      'If you can\'t place it, save for later.\n'
+      'Tiles must form at least 1 passage.\n'
+      '⬆ = must orient toward North',
+      rulesStyle, boxWidth - 20, textAlign: ui.TextAlign.left);
+    canvas.drawParagraph(rulesPara, Offset(size / 2 - boxWidth / 2 + 10, size / 2 - boxHeight / 2 + 45));
+
+    final iconsStyle = ui.TextStyle(
+      color: color,
+      fontSize: 16,
+    );
+    final iconsPara = _buildParagraph('💎 💀 🐀 🪙 👁️', iconsStyle, boxWidth - 20, textAlign: ui.TextAlign.center);
+    canvas.drawParagraph(iconsPara, Offset(size / 2 - boxWidth / 2 + 10, size / 2 + boxHeight / 2 - 30));
   }
 
   /// Draw a rugged cave-style path from center to edge
