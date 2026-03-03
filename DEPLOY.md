@@ -115,6 +115,16 @@ lib/
 - `x18*`, `gt01*`, `gb0*`, `mx*` → Cat Printer
 - `t02*`, `t04*`, `m02*`, `phomemo*` → Phomemo/ESC-POS
 
+### X18 Printer Settings (Seven Star Technology)
+Tested and working settings:
+- **Protocol:** Cat Printer (51 78 header)
+- **CRC:** CRC8 (not simple sum)
+- **Bit order:** LSB first
+- **New format:** OFF (no 0x12 prefix)
+- **Energy:** 80%
+- **Row delay:** 0ms
+- **Compression:** OFF
+
 ## Testers
 
 Firebase App Distribution group: `testers`
