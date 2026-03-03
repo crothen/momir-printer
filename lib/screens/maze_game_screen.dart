@@ -133,13 +133,14 @@ class _MazeGameScreenState extends State<MazeGameScreen> {
     TileShape.crossroads: true,
   };
 
-  // Generated tiles
-  List<MazeTile> _tiles = [];
-  int _currentPrintIndex = 0;
+  // Game state
+  bool _gameStarted = false;
   bool _isPrinting = false;
-  bool _isGenerating = false;
-  bool _printingEffectSheet = false; // True when printing the effect sheet after a tile
-  bool _printedRules = false; // Track if rules sheet was printed
+  bool _printingEffectSheet = false;
+  bool _printedRules = false;
+  bool _printedStartTile = false;
+  MazeTile? _currentTile; // Current tile to print
+  int _tilesPrinted = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -147,15 +148,15 @@ class _MazeGameScreenState extends State<MazeGameScreen> {
       appBar: AppBar(
         title: const Text('🗺️ Maze Explorer'),
         actions: [
-          if (_tiles.isNotEmpty)
+          if (_gameStarted)
             IconButton(
-              icon: const Icon(Icons.refresh),
-              onPressed: _resetGame,
-              tooltip: 'New maze',
+              icon: const Icon(Icons.stop),
+              onPressed: _endGame,
+              tooltip: 'End game',
             ),
         ],
       ),
-      body: _tiles.isEmpty ? _buildSetup() : _buildPrinting(),
+      body: !_gameStarted ? _buildSetup() : _buildPrinting(),
     );
   }
 
@@ -206,7 +207,7 @@ class _MazeGameScreenState extends State<MazeGameScreen> {
               child: ElevatedButton.icon(
                 onPressed:
                     (_bluetooth.currentState == BleConnectionState.connected || _demoMode)
-                        ? _generateTiles
+                        ? _startGame
                         : null,
                 icon: Icon(_demoMode ? Icons.play_arrow : Icons.print, size: 28),
                 label: Text(
@@ -240,73 +241,65 @@ class _MazeGameScreenState extends State<MazeGameScreen> {
     }
   }
 
-  void _generateTiles() {
-    setState(() => _isGenerating = true);
-
-    final enabledShapes =
-        _enabledShapes.entries.where((e) => e.value).map((e) => e.key).toList();
-
-    // Shuffle effects for random assignment
-    final shuffledEffects = List<String>.from(MazeSecret.allEffects)..shuffle(_random);
-    int effectIndex = 0;
-
-    // First tile is always a crossroads with North indicator (start tile)
-    final startTile = MazeTile(
-      shape: TileShape.crossroads,
-      rotation: 0,
-      hasNorthIndicator: true,
-      northRotation: [0, 90, 180, 270][_random.nextInt(4)],
-      isStartTile: true,
-    );
-
-    // Generate remaining tiles
-    final regularTiles = List.generate(_tileCount, (i) {
-      final shape = enabledShapes[_random.nextInt(enabledShapes.length)];
-      final rotation = [0, 90, 180, 270][_random.nextInt(4)];
-
-      MazeSecret? secret;
-      if (_random.nextDouble() < _secretChance) {
-        // Pick random icon from the 5 collectibles
-        final icon = MazeIcon.all[_random.nextInt(MazeIcon.all.length)];
-        // Pick next effect from shuffled list (wrap around if needed)
-        final effect = shuffledEffects[effectIndex % shuffledEffects.length];
-        effectIndex++;
-        secret = MazeSecret(icon, effect);
-      }
-
-      // North indicator: configurable chance, but dead ends never have it
-      final hasNorth = shape != TileShape.deadEnd && _random.nextDouble() < _northChance;
-      final northRot = [0, 90, 180, 270][_random.nextInt(4)];
-
-      return MazeTile(
-        shape: shape,
-        rotation: rotation,
-        secret: secret,
-        hasNorthIndicator: hasNorth,
-        northRotation: northRot,
-      );
-    });
-
-    _tiles = [startTile, ...regularTiles];
-
+  void _startGame() {
     setState(() {
-      _isGenerating = false;
-      _currentPrintIndex = 0;
-      _printingEffectSheet = false;
+      _gameStarted = true;
+      _printedRules = false;
+      _printedStartTile = false;
+      _tilesPrinted = 0;
+      _currentTile = null;
     });
   }
 
+  /// Generate a random tile on demand
+  MazeTile _generateNextTile({bool isStartTile = false}) {
+    if (isStartTile) {
+      return MazeTile(
+        shape: TileShape.crossroads,
+        rotation: 0,
+        hasNorthIndicator: true,
+        northRotation: [0, 90, 180, 270][_random.nextInt(4)],
+        isStartTile: true,
+      );
+    }
+
+    final enabledShapes = _enabledShapes.entries.where((e) => e.value).map((e) => e.key).toList();
+    final shape = enabledShapes[_random.nextInt(enabledShapes.length)];
+    final rotation = [0, 90, 180, 270][_random.nextInt(4)];
+
+    MazeSecret? secret;
+    if (_random.nextDouble() < _secretChance) {
+      final icon = MazeIcon.all[_random.nextInt(MazeIcon.all.length)];
+      final effect = MazeSecret.allEffects[_random.nextInt(MazeSecret.allEffects.length)];
+      secret = MazeSecret(icon, effect);
+    }
+
+    final hasNorth = shape != TileShape.deadEnd && _random.nextDouble() < _northChance;
+    final northRot = [0, 90, 180, 270][_random.nextInt(4)];
+
+    return MazeTile(
+      shape: shape,
+      rotation: rotation,
+      secret: secret,
+      hasNorthIndicator: hasNorth,
+      northRotation: northRot,
+    );
+  }
+
   Widget _buildPrinting() {
-    // First, print rules sheet
+    // First, offer to print rules
     if (!_printedRules) {
       return _buildRulesPrint();
     }
     
-    if (_currentPrintIndex >= _tiles.length) {
-      return _buildComplete();
+    // Then, offer to print start tile
+    if (!_printedStartTile) {
+      return _buildStartTilePrint();
     }
-
-    final tile = _tiles[_currentPrintIndex];
+    
+    // Generate next tile if needed
+    _currentTile ??= _generateNextTile();
+    final tile = _currentTile!;
 
     return Container(
       color: const Color(0xFF2a2a3a),
@@ -325,11 +318,9 @@ class _MazeGameScreenState extends State<MazeGameScreen> {
                     style: const TextStyle(fontSize: 24, color: Colors.white),
                   ),
                 ] else ...[
-                  // Tile info
+                  // Tile count
                   Text(
-                    tile.isStartTile 
-                        ? 'Starting Tile'
-                        : 'Tile ${_currentPrintIndex} of ${_tiles.length - 1}',
+                    'Tile #${_tilesPrinted + 1}',
                     style: const TextStyle(fontSize: 20, color: Colors.white70),
                   ),
                   const SizedBox(height: 16),
@@ -406,17 +397,20 @@ class _MazeGameScreenState extends State<MazeGameScreen> {
                   const Icon(Icons.description, size: 60, color: Colors.white70),
                   const SizedBox(height: 16),
                   const Text('Rules Sheet', style: TextStyle(fontSize: 24, color: Colors.white, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 8),
-                  const Text('Print first, then tiles', style: TextStyle(fontSize: 16, color: Colors.white70)),
                   const SizedBox(height: 48),
                   SizedBox(
                     width: double.infinity,
-                    height: 64,
+                    height: 56,
                     child: ElevatedButton.icon(
                       onPressed: _printRulesSheet,
-                      icon: const Icon(Icons.print, size: 28),
-                      label: Text(_demoMode ? 'Preview Rules' : 'Print Rules', style: const TextStyle(fontSize: 20)),
+                      icon: const Icon(Icons.print, size: 24),
+                      label: Text(_demoMode ? 'Preview Rules' : 'Print Rules', style: const TextStyle(fontSize: 18)),
                     ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextButton(
+                    onPressed: () => setState(() => _printedRules = true),
+                    child: const Text('Skip →', style: TextStyle(fontSize: 16, color: Colors.white54)),
                   ),
                 ],
               ],
@@ -426,13 +420,10 @@ class _MazeGameScreenState extends State<MazeGameScreen> {
       ),
     );
   }
-
-  Widget _buildComplete() {
-    final secretCount = _tiles.where((t) => t.secret != null).length;
-    final northCount = _tiles.where((t) => t.hasNorthIndicator).length;
-
+  
+  Widget _buildStartTilePrint() {
     return Container(
-      color: const Color(0xFF1a3a1a),
+      color: const Color(0xFF2a2a3a),
       child: SafeArea(
         child: Center(
           child: Padding(
@@ -440,25 +431,32 @@ class _MazeGameScreenState extends State<MazeGameScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.check_circle, size: 80, color: Colors.green),
-                const SizedBox(height: 24),
-                const Text(
-                  'Maze Complete!',
-                  style: TextStyle(
-                      fontSize: 28, color: Colors.white, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  '${_tiles.length} tiles printed\n$secretCount secrets hidden\n$northCount with ⬆ orientation',
-                  style: const TextStyle(fontSize: 16, color: Colors.white70),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 48),
-                ElevatedButton.icon(
-                  onPressed: _resetGame,
-                  icon: const Icon(Icons.refresh),
-                  label: const Text('New Maze'),
-                ),
+                if (_isPrinting) ...[
+                  const CircularProgressIndicator(color: Colors.white),
+                  const SizedBox(height: 24),
+                  const Text('Printing start tile...', style: TextStyle(fontSize: 24, color: Colors.white)),
+                ] else ...[
+                  const Icon(Icons.flag, size: 60, color: Colors.white70),
+                  const SizedBox(height: 16),
+                  const Text('Start Tile', style: TextStyle(fontSize: 24, color: Colors.white, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8),
+                  const Text('Crossroads with North indicator', style: TextStyle(fontSize: 14, color: Colors.white54)),
+                  const SizedBox(height: 48),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 56,
+                    child: ElevatedButton.icon(
+                      onPressed: _printStartTile,
+                      icon: const Icon(Icons.print, size: 24),
+                      label: Text(_demoMode ? 'Preview Start Tile' : 'Print Start Tile', style: const TextStyle(fontSize: 18)),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextButton(
+                    onPressed: () => setState(() => _printedStartTile = true),
+                    child: const Text('Skip →', style: TextStyle(fontSize: 16, color: Colors.white54)),
+                  ),
+                ],
               ],
             ),
           ),
@@ -479,14 +477,27 @@ class _MazeGameScreenState extends State<MazeGameScreen> {
     });
   }
 
+  Future<void> _printStartTile() async {
+    setState(() => _isPrinting = true);
+    
+    final startTile = _generateNextTile(isStartTile: true);
+    final tileImage = await _generateTileImage(startTile);
+    await _printOrPreview(tileImage, 'Start Tile');
+    
+    setState(() {
+      _isPrinting = false;
+      _printedStartTile = true;
+    });
+  }
+
   Future<void> _printCurrentTile() async {
     setState(() => _isPrinting = true);
 
-    final tile = _tiles[_currentPrintIndex];
+    final tile = _currentTile!;
     
     // Print the tile
     final tileImage = await _generateTileImage(tile);
-    await _printOrPreview(tileImage, 'Tile ${_currentPrintIndex + 1}');
+    await _printOrPreview(tileImage, 'Tile #${_tilesPrinted + 1}');
 
     // If tile has a secret, print the effect sheet too
     if (tile.secret != null) {
@@ -498,8 +509,32 @@ class _MazeGameScreenState extends State<MazeGameScreen> {
     setState(() {
       _isPrinting = false;
       _printingEffectSheet = false;
-      _currentPrintIndex++;
+      _tilesPrinted++;
+      _currentTile = null; // Generate new tile next time
     });
+  }
+
+  void _endGame() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('End Game?'),
+        content: Text('You printed $_tilesPrinted tiles.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Continue'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              _resetGame();
+            },
+            child: const Text('End'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _printOrPreview(Uint8List imageBytes, String title) async {
@@ -1007,10 +1042,13 @@ class _MazeGameScreenState extends State<MazeGameScreen> {
 
   void _resetGame() {
     setState(() {
-      _tiles = [];
-      _currentPrintIndex = 0;
+      _gameStarted = false;
+      _isPrinting = false;
       _printingEffectSheet = false;
       _printedRules = false;
+      _printedStartTile = false;
+      _currentTile = null;
+      _tilesPrinted = 0;
     });
   }
 }
