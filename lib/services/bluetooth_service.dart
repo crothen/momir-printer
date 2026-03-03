@@ -2,40 +2,91 @@ import 'dart:async';
 import 'dart:typed_data';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart' as fbp;
 
-/// Manages BLE connections to thermal printers
+/// Represents a connected printer with its characteristics
+class ConnectedPrinter {
+  final fbp.BluetoothDevice device;
+  final fbp.BluetoothCharacteristic writeCharacteristic;
+  final fbp.BluetoothCharacteristic? notifyCharacteristic;
+  final StreamSubscription<fbp.BluetoothConnectionState> connectionSubscription;
+  
+  ConnectedPrinter({
+    required this.device,
+    required this.writeCharacteristic,
+    this.notifyCharacteristic,
+    required this.connectionSubscription,
+  });
+  
+  String get name => device.platformName;
+  String get id => device.remoteId.str;
+  
+  /// Get info about the characteristic for debugging
+  String get characteristicInfo {
+    final svcFull = writeCharacteristic.serviceUuid.toString().toLowerCase();
+    final charFull = writeCharacteristic.uuid.toString().toLowerCase();
+    final svc = svcFull.length >= 8 ? svcFull.substring(4, 8) : svcFull;
+    final char = charFull.length >= 8 ? charFull.substring(4, 8) : charFull;
+    final notify = notifyCharacteristic != null ? ', notify: on' : '';
+    return 'Svc: $svc, Char: $char$notify';
+  }
+  
+  /// Write data to this printer
+  Future<bool> write(Uint8List data) async {
+    try {
+      final useWithoutResponse = writeCharacteristic.properties.writeWithoutResponse;
+      const chunkSize = 120;
+      
+      for (var i = 0; i < data.length; i += chunkSize) {
+        final end = (i + chunkSize > data.length) ? data.length : i + chunkSize;
+        final chunk = data.sublist(i, end);
+        
+        await writeCharacteristic.write(chunk, withoutResponse: useWithoutResponse);
+        
+        if (end < data.length) {
+          await Future.delayed(const Duration(milliseconds: 20));
+        }
+      }
+      
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+}
+
+/// Manages BLE connections to multiple thermal printers
 class BleManager {
   static final BleManager _instance = BleManager._internal();
   factory BleManager() => _instance;
   BleManager._internal();
 
-  // Connection state
-  fbp.BluetoothDevice? _connectedDevice;
-  fbp.BluetoothCharacteristic? _writeCharacteristic;
-  fbp.BluetoothCharacteristic? _notifyCharacteristic;
-  StreamSubscription<fbp.BluetoothConnectionState>? _connectionSubscription;
+  // Connected printers
+  final List<ConnectedPrinter> _printers = [];
+  ConnectedPrinter? _selectedPrinter;
 
   // State streams
-  final _connectionStateController = StreamController<BleConnectionState>.broadcast();
-  Stream<BleConnectionState> get connectionState => _connectionStateController.stream;
-
-  // Current state
-  BleConnectionState _currentState = BleConnectionState.disconnected;
-  BleConnectionState get currentState => _currentState;
-
-  fbp.BluetoothDevice? get connectedDevice => _connectedDevice;
-  String? get connectedDeviceName => _connectedDevice?.platformName;
+  final _printersController = StreamController<List<ConnectedPrinter>>.broadcast();
+  Stream<List<ConnectedPrinter>> get printersStream => _printersController.stream;
   
-  /// Get info about the connected characteristic for debugging
-  String? get connectedCharacteristicInfo {
-    if (_writeCharacteristic == null) return null;
-    final svcFull = _writeCharacteristic!.serviceUuid.toString().toLowerCase();
-    final charFull = _writeCharacteristic!.uuid.toString().toLowerCase();
-    // Extract the short UUID (e.g., "ae30" from "0000ae30-...")
-    final svc = svcFull.length >= 8 ? svcFull.substring(4, 8) : svcFull;
-    final char = charFull.length >= 8 ? charFull.substring(4, 8) : charFull;
-    final notify = _notifyCharacteristic != null ? ', notify: on' : '';
-    return 'Svc: $svc, Char: $char$notify';
-  }
+  final _selectedController = StreamController<ConnectedPrinter?>.broadcast();
+  Stream<ConnectedPrinter?> get selectedStream => _selectedController.stream;
+
+  // Getters
+  List<ConnectedPrinter> get connectedPrinters => List.unmodifiable(_printers);
+  ConnectedPrinter? get selectedPrinter => _selectedPrinter;
+  int get printerCount => _printers.length;
+  bool get hasConnectedPrinter => _printers.isNotEmpty;
+  
+  // Legacy compatibility getters
+  BleConnectionState get currentState => 
+      _printers.isNotEmpty ? BleConnectionState.connected : BleConnectionState.disconnected;
+  fbp.BluetoothDevice? get connectedDevice => _selectedPrinter?.device;
+  String? get connectedDeviceName => _selectedPrinter?.name;
+  String? get connectedCharacteristicInfo => _selectedPrinter?.characteristicInfo;
+  
+  // Legacy compatibility stream
+  Stream<BleConnectionState> get connectionState => 
+      _printersController.stream.map((list) => 
+          list.isNotEmpty ? BleConnectionState.connected : BleConnectionState.disconnected);
 
   /// Check if Bluetooth is available and on
   Future<bool> isBluetoothAvailable() async {
@@ -48,10 +99,8 @@ class BleManager {
 
   /// Start scanning for BLE devices
   Stream<List<fbp.ScanResult>> scanForDevices({Duration timeout = const Duration(seconds: 10)}) {
-    // Stop any existing scan
     fbp.FlutterBluePlus.stopScan();
     
-    // Start scanning
     fbp.FlutterBluePlus.startScan(
       timeout: timeout,
       androidUsesFineLocation: true,
@@ -65,51 +114,89 @@ class BleManager {
     await fbp.FlutterBluePlus.stopScan();
   }
 
-  /// Connect to a BLE device
+  /// Check if a device is already connected
+  bool isConnected(fbp.BluetoothDevice device) {
+    return _printers.any((p) => p.id == device.remoteId.str);
+  }
+
+  /// Connect to a BLE device (adds to list, doesn't replace)
   Future<bool> connect(fbp.BluetoothDevice device) async {
+    // Already connected?
+    if (isConnected(device)) {
+      // Just select it
+      _selectedPrinter = _printers.firstWhere((p) => p.id == device.remoteId.str);
+      _selectedController.add(_selectedPrinter);
+      return true;
+    }
+    
     try {
-      _updateState(BleConnectionState.connecting);
-      
-      // Connect to device
       await device.connect(timeout: const Duration(seconds: 10));
-      _connectedDevice = device;
       
-      // Listen for disconnection
-      _connectionSubscription?.cancel();
-      _connectionSubscription = device.connectionState.listen((state) {
-        if (state == fbp.BluetoothConnectionState.disconnected) {
-          _handleDisconnection();
-        }
-      });
-      
-      // Discover services and find write characteristic
       final services = await device.discoverServices();
-      _writeCharacteristic = _findWriteCharacteristic(services);
+      final writeChar = _findWriteCharacteristic(services);
       
-      if (_writeCharacteristic == null) {
-        await disconnect();
+      if (writeChar == null) {
+        await device.disconnect();
         return false;
       }
       
-      // Find and enable notifications on ae02 (required by some printers)
-      _notifyCharacteristic = _findNotifyCharacteristic(services);
-      if (_notifyCharacteristic != null) {
+      final notifyChar = _findNotifyCharacteristic(services);
+      if (notifyChar != null) {
         try {
-          await _notifyCharacteristic!.setNotifyValue(true);
+          await notifyChar.setNotifyValue(true);
         } catch (e) {
-          // Ignore notification errors - not all printers need this
+          // Ignore
         }
       }
       
-      _updateState(BleConnectionState.connected);
+      final subscription = device.connectionState.listen((state) {
+        if (state == fbp.BluetoothConnectionState.disconnected) {
+          _handleDisconnection(device.remoteId.str);
+        }
+      });
+      
+      final printer = ConnectedPrinter(
+        device: device,
+        writeCharacteristic: writeChar,
+        notifyCharacteristic: notifyChar,
+        connectionSubscription: subscription,
+      );
+      
+      _printers.add(printer);
+      
+      // Auto-select if it's the first printer
+      if (_selectedPrinter == null) {
+        _selectedPrinter = printer;
+        _selectedController.add(_selectedPrinter);
+      }
+      
+      _printersController.add(_printers);
       return true;
     } catch (e) {
-      _updateState(BleConnectionState.disconnected);
       return false;
     }
   }
 
-  /// Find the write characteristic for thermal printers
+  /// Select a printer by its device ID
+  void selectPrinter(String deviceId) {
+    final printer = _printers.cast<ConnectedPrinter?>().firstWhere(
+      (p) => p?.id == deviceId,
+      orElse: () => null,
+    );
+    if (printer != null) {
+      _selectedPrinter = printer;
+      _selectedController.add(_selectedPrinter);
+    }
+  }
+  
+  /// Select a printer directly
+  void selectPrinterDirect(ConnectedPrinter printer) {
+    if (_printers.contains(printer)) {
+      _selectedPrinter = printer;
+      _selectedController.add(_selectedPrinter);
+    }
+  }
+
   fbp.BluetoothCharacteristic? _findWriteCharacteristic(List<fbp.BluetoothService> services) {
     // Priority 1: Cat printer service 0xAE30, characteristic 0xAE01
     for (final svc in services) {
@@ -137,7 +224,7 @@ class BleManager {
       }
     }
     
-    // Priority 3: Generic printer characteristics (ae01, ae02)
+    // Priority 3: Generic printer characteristics
     for (final svc in services) {
       for (final char in svc.characteristics) {
         if (char.properties.write || char.properties.writeWithoutResponse) {
@@ -161,7 +248,6 @@ class BleManager {
     return null;
   }
 
-  /// Find the notify characteristic for thermal printers (ae02)
   fbp.BluetoothCharacteristic? _findNotifyCharacteristic(List<fbp.BluetoothService> services) {
     for (final svc in services) {
       final svcUuid = svc.uuid.toString().toLowerCase();
@@ -177,77 +263,68 @@ class BleManager {
     return null;
   }
 
-  /// Disconnect from current device
-  Future<void> disconnect() async {
-    _connectionSubscription?.cancel();
-    _connectionSubscription = null;
+  /// Disconnect a specific printer
+  Future<void> disconnectPrinter(String deviceId) async {
+    final index = _printers.indexWhere((p) => p.id == deviceId);
+    if (index == -1) return;
     
-    if (_notifyCharacteristic != null) {
+    final printer = _printers[index];
+    printer.connectionSubscription.cancel();
+    
+    if (printer.notifyCharacteristic != null) {
       try {
-        await _notifyCharacteristic!.setNotifyValue(false);
+        await printer.notifyCharacteristic!.setNotifyValue(false);
       } catch (e) {
         // Ignore
       }
     }
     
-    if (_connectedDevice != null) {
-      await _connectedDevice!.disconnect();
-      _connectedDevice = null;
+    await printer.device.disconnect();
+    _printers.removeAt(index);
+    
+    // Update selected printer if needed
+    if (_selectedPrinter?.id == deviceId) {
+      _selectedPrinter = _printers.isNotEmpty ? _printers.first : null;
+      _selectedController.add(_selectedPrinter);
     }
     
-    _writeCharacteristic = null;
-    _notifyCharacteristic = null;
-    _updateState(BleConnectionState.disconnected);
+    _printersController.add(_printers);
   }
 
-  /// Handle unexpected disconnection
-  void _handleDisconnection() {
-    _connectedDevice = null;
-    _writeCharacteristic = null;
-    _notifyCharacteristic = null;
-    _connectionSubscription?.cancel();
-    _connectionSubscription = null;
-    _updateState(BleConnectionState.disconnected);
+  /// Disconnect all printers (legacy compatibility)
+  Future<void> disconnect() async {
+    for (final printer in List.of(_printers)) {
+      await disconnectPrinter(printer.id);
+    }
   }
 
-  /// Write data to the connected printer
+  void _handleDisconnection(String deviceId) {
+    final index = _printers.indexWhere((p) => p.id == deviceId);
+    if (index == -1) return;
+    
+    _printers[index].connectionSubscription.cancel();
+    _printers.removeAt(index);
+    
+    if (_selectedPrinter?.id == deviceId) {
+      _selectedPrinter = _printers.isNotEmpty ? _printers.first : null;
+      _selectedController.add(_selectedPrinter);
+    }
+    
+    _printersController.add(_printers);
+  }
+
+  /// Write data to the selected printer (legacy compatibility)
   Future<bool> write(Uint8List data) async {
-    if (_writeCharacteristic == null) return false;
-    
-    try {
-      // Use write-with-response if supported, otherwise write-without-response
-      final useWithoutResponse = _writeCharacteristic!.properties.writeWithoutResponse;
-      
-      // Split into chunks if needed (BLE has MTU limits)
-      const chunkSize = 120; // Smaller chunks for reliability
-      
-      for (var i = 0; i < data.length; i += chunkSize) {
-        final end = (i + chunkSize > data.length) ? data.length : i + chunkSize;
-        final chunk = data.sublist(i, end);
-        
-        await _writeCharacteristic!.write(chunk, withoutResponse: useWithoutResponse);
-        
-        // Small delay between chunks
-        if (end < data.length) {
-          await Future.delayed(const Duration(milliseconds: 20));
-        }
-      }
-      
-      return true;
-    } catch (e) {
-      return false;
-    }
+    if (_selectedPrinter == null) return false;
+    return _selectedPrinter!.write(data);
   }
 
-  void _updateState(BleConnectionState state) {
-    _currentState = state;
-    _connectionStateController.add(state);
-  }
-
-  /// Dispose resources
   void dispose() {
-    _connectionSubscription?.cancel();
-    _connectionStateController.close();
+    for (final printer in _printers) {
+      printer.connectionSubscription.cancel();
+    }
+    _printersController.close();
+    _selectedController.close();
   }
 }
 

@@ -34,8 +34,9 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
+  int get _printerCount => _bluetooth.printerCount;
   String? get _connectedPrinter => _bluetooth.connectedDeviceName;
-  bool get _isConnected => _bluetooth.currentState == BleConnectionState.connected;
+  bool get _isConnected => _bluetooth.hasConnectedPrinter;
 
   @override
   Widget build(BuildContext context) {
@@ -44,13 +45,33 @@ class _HomeScreenState extends State<HomeScreen> {
         title: const Text('Momir Printer'),
         actions: [
           // Printer connection status
-          IconButton(
-            icon: Icon(
-              _isConnected ? Icons.print : Icons.print_disabled,
-              color: _isConnected ? Colors.green : null,
-            ),
-            onPressed: _showPrinterDialog,
-            tooltip: _connectedPrinter ?? 'No printer connected',
+          Stack(
+            children: [
+              IconButton(
+                icon: Icon(
+                  _isConnected ? Icons.print : Icons.print_disabled,
+                  color: _isConnected ? Colors.green : null,
+                ),
+                onPressed: _showPrinterDialog,
+                tooltip: _connectedPrinter ?? 'No printer connected',
+              ),
+              if (_printerCount > 1)
+                Positioned(
+                  right: 4,
+                  top: 4,
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.primary,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Text(
+                      '$_printerCount',
+                      style: const TextStyle(fontSize: 10, color: Colors.white),
+                    ),
+                  ),
+                ),
+            ],
           ),
         ],
       ),
@@ -66,18 +87,19 @@ class _HomeScreenState extends State<HomeScreen> {
                   _isConnected ? Icons.bluetooth_connected : Icons.bluetooth_disabled,
                   color: _isConnected ? Colors.blue : Colors.grey,
                 ),
-                title: Text(_connectedPrinter ?? 'No printer connected'),
+                title: Text(_printerCount > 1 
+                    ? '${_connectedPrinter ?? "Unknown"} (+${_printerCount - 1} more)'
+                    : _connectedPrinter ?? 'No printer connected'),
                 subtitle: _isConnected 
-                    ? const Text('Ready to print')
+                    ? Text(_printerCount > 1 
+                        ? '$_printerCount printers connected' 
+                        : 'Ready to print')
                     : const Text('Tap to connect'),
                 trailing: _isConnected
                     ? IconButton(
-                        icon: const Icon(Icons.close),
-                        onPressed: () async {
-                          await _bluetooth.disconnect();
-                          setState(() {});
-                        },
-                        tooltip: 'Disconnect',
+                        icon: const Icon(Icons.settings),
+                        onPressed: _showPrinterDialog,
+                        tooltip: 'Manage printers',
                       )
                     : null,
                 onTap: _showPrinterDialog,
