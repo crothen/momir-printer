@@ -139,6 +139,7 @@ class _MazeGameScreenState extends State<MazeGameScreen> {
   bool _isPrinting = false;
   bool _isGenerating = false;
   bool _printingEffectSheet = false; // True when printing the effect sheet after a tile
+  bool _printedRules = false; // Track if rules sheet was printed
 
   @override
   Widget build(BuildContext context) {
@@ -159,171 +160,68 @@ class _MazeGameScreenState extends State<MazeGameScreen> {
   }
 
   Widget _buildSetup() {
-    final enabledCount = _enabledShapes.values.where((v) => v).length;
-
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        // Tile count
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('Number of Tiles',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.remove_circle_outline),
-                      onPressed:
-                          _tileCount > 4 ? () => setState(() => _tileCount--) : null,
-                    ),
-                    Text('$_tileCount',
-                        style: const TextStyle(
-                            fontSize: 32, fontWeight: FontWeight.bold)),
-                    IconButton(
-                      icon: const Icon(Icons.add_circle_outline),
-                      onPressed: _tileCount < 25
-                          ? () => setState(() => _tileCount++)
-                          : null,
-                    ),
-                  ],
-                ),
-                Text(
-                  '+ 1 starting tile (crossroads with rules)',
-                  style: TextStyle(color: Theme.of(context).colorScheme.outline, fontSize: 12),
-                ),
-              ],
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.explore, size: 80, color: Colors.brown),
+            const SizedBox(height: 24),
+            const Text(
+              'Maze Explorer',
+              style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
             ),
-          ),
-        ),
-
-        const SizedBox(height: 16),
-
-        // Tile shapes
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('Tile Shapes',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 8),
-                ...TileShape.values.map((shape) => CheckboxListTile(
-                      title: Text('${shape.symbol} - ${shape.name}'),
-                      subtitle: Text(_getShapeDescription(shape)),
-                      value: _enabledShapes[shape],
-                      onChanged: enabledCount > 1 || !_enabledShapes[shape]!
-                          ? (v) => setState(() => _enabledShapes[shape] = v!)
-                          : null,
-                      dense: true,
-                    )),
-              ],
+            const SizedBox(height: 8),
+            Text(
+              'Collect 3 matching icons to win!',
+              style: TextStyle(fontSize: 16, color: Theme.of(context).colorScheme.outline),
             ),
-          ),
-        ),
-
-        const SizedBox(height: 16),
-
-        // Secrets & North indicators
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('Secrets',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 8),
-                Text('${(_secretChance * 100).round()}% chance per tile'),
-                Slider(
-                  value: _secretChance,
-                  min: 0,
-                  max: 1,
-                  divisions: 10,
-                  label: '${(_secretChance * 100).round()}%',
-                  onChanged: (v) => setState(() => _secretChance = v),
-                ),
-                const SizedBox(height: 16),
-                const Text('⬆ North Indicators',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 8),
-                Text('${(_northChance * 100).round()}% of tiles (dead ends excluded)'),
-                Slider(
-                  value: _northChance,
-                  min: 0,
-                  max: 1,
-                  divisions: 10,
-                  label: '${(_northChance * 100).round()}%',
-                  onChanged: (v) => setState(() => _northChance = v),
-                ),
-              ],
-            ),
-          ),
-        ),
-
-        const SizedBox(height: 16),
-
-        // Visual options
-        Card(
-          child: Column(
-            children: [
-              SwitchListTile(
-                title: const Text('🖤 Cave Style (Black Background)'),
-                subtitle: Text(
-                  _blackBackground
-                      ? 'Paths carved into darkness (50% dither)'
-                      : 'White background with dark paths',
-                  style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.outline),
-                ),
-                value: _blackBackground,
-                onChanged: (v) => setState(() => _blackBackground = v),
-              ),
-              SwitchListTile(
+            const SizedBox(height: 8),
+            const Text('💎 💀 🐀 🪙 👁️', style: TextStyle(fontSize: 24)),
+            
+            const SizedBox(height: 48),
+            
+            // Demo toggle
+            Card(
+              child: SwitchListTile(
                 title: const Text('🎭 Demo Mode'),
                 subtitle: Text(
                   _demoMode
-                      ? 'Shows tiles on screen (no printer needed)'
-                      : 'Requires connected printer',
+                      ? 'Preview on screen (no printer)'
+                      : 'Print to connected printer',
                   style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.outline),
                 ),
                 value: _demoMode,
                 onChanged: (v) => setState(() => _demoMode = v),
               ),
-            ],
-          ),
-        ),
-
-        const SizedBox(height: 24),
-
-        // Generate button
-        SizedBox(
-          height: 56,
-          child: ElevatedButton.icon(
-            onPressed:
-                (_bluetooth.currentState == BleConnectionState.connected || _demoMode)
-                    ? _generateTiles
-                    : null,
-            icon: Icon(_isGenerating
-                ? Icons.hourglass_empty
-                : (_demoMode ? Icons.play_arrow : Icons.print)),
-            label: Text(
-              _isGenerating
-                  ? 'Generating...'
-                  : (_demoMode
-                      ? 'Generate & Preview'
-                      : (_bluetooth.currentState == BleConnectionState.connected
-                          ? 'Generate & Print'
-                          : 'Connect printer first')),
-              style: const TextStyle(fontSize: 18),
             ),
-          ),
+            
+            const SizedBox(height: 24),
+            
+            // Start button
+            SizedBox(
+              width: double.infinity,
+              height: 64,
+              child: ElevatedButton.icon(
+                onPressed:
+                    (_bluetooth.currentState == BleConnectionState.connected || _demoMode)
+                        ? _generateTiles
+                        : null,
+                icon: Icon(_demoMode ? Icons.play_arrow : Icons.print, size: 28),
+                label: Text(
+                  _demoMode
+                      ? 'Start Demo'
+                      : (_bluetooth.currentState == BleConnectionState.connected
+                          ? 'Start Game'
+                          : 'Connect printer first'),
+                  style: const TextStyle(fontSize: 20),
+                ),
+              ),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 
@@ -399,6 +297,11 @@ class _MazeGameScreenState extends State<MazeGameScreen> {
   }
 
   Widget _buildPrinting() {
+    // First, print rules sheet
+    if (!_printedRules) {
+      return _buildRulesPrint();
+    }
+    
     if (_currentPrintIndex >= _tiles.length) {
       return _buildComplete();
     }
@@ -418,14 +321,14 @@ class _MazeGameScreenState extends State<MazeGameScreen> {
                   const CircularProgressIndicator(color: Colors.white),
                   const SizedBox(height: 24),
                   Text(
-                    _printingEffectSheet ? 'Printing effect sheet...' : 'Printing tile...',
+                    _printingEffectSheet ? 'Printing...' : 'Printing tile...',
                     style: const TextStyle(fontSize: 24, color: Colors.white),
                   ),
                 ] else ...[
                   // Tile info
                   Text(
                     tile.isStartTile 
-                        ? 'Starting Tile (Rules)'
+                        ? 'Starting Tile'
                         : 'Tile ${_currentPrintIndex} of ${_tiles.length - 1}',
                     style: const TextStyle(fontSize: 20, color: Colors.white70),
                   ),
@@ -457,12 +360,8 @@ class _MazeGameScreenState extends State<MazeGameScreen> {
                   if (tile.secret != null) ...[
                     const SizedBox(height: 8),
                     Text(
-                      'Secret: ${tile.secret!.emoji} ${tile.secret!.name}',
-                      style: const TextStyle(fontSize: 14, color: Colors.amber),
-                    ),
-                    Text(
-                      '(will print effect sheet after tile)',
-                      style: TextStyle(fontSize: 12, color: Colors.amber.withValues(alpha: 0.7)),
+                      'Contains: ${tile.secret!.emoji}',
+                      style: const TextStyle(fontSize: 18, color: Colors.amber),
                     ),
                   ],
 
@@ -478,6 +377,45 @@ class _MazeGameScreenState extends State<MazeGameScreen> {
                         _demoMode ? 'Preview' : 'Print',
                         style: const TextStyle(fontSize: 20),
                       ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+  
+  Widget _buildRulesPrint() {
+    return Container(
+      color: const Color(0xFF2a2a3a),
+      child: SafeArea(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (_isPrinting) ...[
+                  const CircularProgressIndicator(color: Colors.white),
+                  const SizedBox(height: 24),
+                  const Text('Printing rules...', style: TextStyle(fontSize: 24, color: Colors.white)),
+                ] else ...[
+                  const Icon(Icons.description, size: 60, color: Colors.white70),
+                  const SizedBox(height: 16),
+                  const Text('Rules Sheet', style: TextStyle(fontSize: 24, color: Colors.white, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8),
+                  const Text('Print first, then tiles', style: TextStyle(fontSize: 16, color: Colors.white70)),
+                  const SizedBox(height: 48),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 64,
+                    child: ElevatedButton.icon(
+                      onPressed: _printRulesSheet,
+                      icon: const Icon(Icons.print, size: 28),
+                      label: Text(_demoMode ? 'Preview Rules' : 'Print Rules', style: const TextStyle(fontSize: 20)),
                     ),
                   ),
                 ],
@@ -529,6 +467,18 @@ class _MazeGameScreenState extends State<MazeGameScreen> {
     );
   }
 
+  Future<void> _printRulesSheet() async {
+    setState(() => _isPrinting = true);
+    
+    final rulesImage = await _generateRulesSheet();
+    await _printOrPreview(rulesImage, 'Rules');
+    
+    setState(() {
+      _isPrinting = false;
+      _printedRules = true;
+    });
+  }
+
   Future<void> _printCurrentTile() async {
     setState(() => _isPrinting = true);
 
@@ -542,7 +492,7 @@ class _MazeGameScreenState extends State<MazeGameScreen> {
     if (tile.secret != null) {
       setState(() => _printingEffectSheet = true);
       final effectImage = await _generateEffectSheet(tile.secret!);
-      await _printOrPreview(effectImage, 'Effect: ${tile.secret!.name}');
+      await _printOrPreview(effectImage, 'Effect');
     }
 
     setState(() {
@@ -620,109 +570,134 @@ class _MazeGameScreenState extends State<MazeGameScreen> {
     }
   }
 
+  /// Generate a rules sheet
+  Future<Uint8List> _generateRulesSheet() async {
+    const width = 384.0;
+    const height = 500.0;
+    const padding = 24.0;
+
+    final recorder = ui.PictureRecorder();
+    final canvas = Canvas(recorder, Rect.fromLTWH(0, 0, width, height));
+
+    // White background
+    canvas.drawRect(Rect.fromLTWH(0, 0, width, height), Paint()..color = const Color(0xFFFFFFFF));
+
+    // Border
+    canvas.drawRect(
+      Rect.fromLTWH(2, 2, width - 4, height - 4),
+      Paint()..color = const Color(0xFF000000)..style = PaintingStyle.stroke..strokeWidth = 3,
+    );
+
+    double y = padding;
+
+    // Title
+    final titleStyle = ui.TextStyle(color: const Color(0xFF000000), fontSize: 32, fontWeight: ui.FontWeight.bold);
+    final titlePara = _buildParagraph('MAZE EXPLORER', titleStyle, width - padding * 2, textAlign: ui.TextAlign.center);
+    canvas.drawParagraph(titlePara, Offset(padding, y));
+    y += 45;
+
+    // Win condition
+    final winStyle = ui.TextStyle(color: const Color(0xFF000000), fontSize: 20, fontWeight: ui.FontWeight.bold);
+    final winPara = _buildParagraph('🏆 Collect 3 matching icons!', winStyle, width - padding * 2, textAlign: ui.TextAlign.center);
+    canvas.drawParagraph(winPara, Offset(padding, y));
+    y += 35;
+
+    // Icons
+    final iconsStyle = ui.TextStyle(color: const Color(0xFF000000), fontSize: 28);
+    final iconsPara = _buildParagraph('💎  💀  🐀  🪙  👁️', iconsStyle, width - padding * 2, textAlign: ui.TextAlign.center);
+    canvas.drawParagraph(iconsPara, Offset(padding, y));
+    y += 50;
+
+    // Separator
+    canvas.drawLine(Offset(padding, y), Offset(width - padding, y), Paint()..strokeWidth = 2);
+    y += 20;
+
+    // Actions
+    final headerStyle = ui.TextStyle(color: const Color(0xFF000000), fontSize: 18, fontWeight: ui.FontWeight.bold);
+    final bodyStyle = ui.TextStyle(color: const Color(0xFF000000), fontSize: 16);
+
+    final moveHeader = _buildParagraph('MOVE', headerStyle, width - padding * 2);
+    canvas.drawParagraph(moveHeader, Offset(padding, y));
+    y += 25;
+    final moveBody = _buildParagraph('Move 1 tile through the maze.', bodyStyle, width - padding * 2);
+    canvas.drawParagraph(moveBody, Offset(padding, y));
+    y += 35;
+
+    final mapHeader = _buildParagraph('MAP', headerStyle, width - padding * 2);
+    canvas.drawParagraph(mapHeader, Offset(padding, y));
+    y += 25;
+    final mapBody = _buildParagraph('Place a tile to expand the maze. If you can\'t place it, save for later. At least 1 path must connect.', bodyStyle, width - padding * 2);
+    canvas.drawParagraph(mapBody, Offset(padding, y));
+    y += 70;
+
+    // North rule
+    final northHeader = _buildParagraph('⬆ NORTH', headerStyle, width - padding * 2);
+    canvas.drawParagraph(northHeader, Offset(padding, y));
+    y += 25;
+    final northBody = _buildParagraph('Tiles with ⬆ must be oriented toward North (this tile).', bodyStyle, width - padding * 2);
+    canvas.drawParagraph(northBody, Offset(padding, y));
+    y += 50;
+
+    // Secrets
+    final secretHeader = _buildParagraph('SECRETS', headerStyle, width - padding * 2);
+    canvas.drawParagraph(secretHeader, Offset(padding, y));
+    y += 25;
+    final secretBody = _buildParagraph('When you land on a secret, read the effect aloud and do it. Then add the icon to your collection.', bodyStyle, width - padding * 2);
+    canvas.drawParagraph(secretBody, Offset(padding, y));
+
+    final picture = recorder.endRecording();
+    final img = await picture.toImage(width.toInt(), height.toInt());
+    final byteData = await img.toByteData(format: ui.ImageByteFormat.png);
+
+    return byteData!.buffer.asUint8List();
+  }
+
   /// Generate a foldable effect sheet for a secret
-  /// Layout: Icon section (1/4 height) | --- fold line --- | Text section (3/4 height)
-  /// Icon section is split: left half = icon, right half = empty
   Future<Uint8List> _generateEffectSheet(MazeSecret secret) async {
     const width = 384.0;
-    const totalHeight = 480.0; // Tall enough to fold 3 times
+    const totalHeight = 450.0;
     const iconSectionHeight = totalHeight / 4;
-    const textSectionHeight = totalHeight * 3 / 4;
-    const padding = 20.0;
+    const padding = 24.0;
 
     final recorder = ui.PictureRecorder();
     final canvas = Canvas(recorder, Rect.fromLTWH(0, 0, width, totalHeight));
 
     // White background
-    canvas.drawRect(
-      Rect.fromLTWH(0, 0, width, totalHeight),
-      Paint()..color = const Color(0xFFFFFFFF),
-    );
+    canvas.drawRect(Rect.fromLTWH(0, 0, width, totalHeight), Paint()..color = const Color(0xFFFFFFFF));
 
     // Border
     canvas.drawRect(
       Rect.fromLTWH(2, 2, width - 4, totalHeight - 4),
-      Paint()
-        ..color = const Color(0xFF000000)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 2,
+      Paint()..color = const Color(0xFF000000)..style = PaintingStyle.stroke..strokeWidth = 2,
     );
 
     // === ICON SECTION (top 1/4) ===
-    // Left half: big icon for collection
-    final emojiStyle = ui.TextStyle(
-      color: const Color(0xFF000000),
-      fontSize: 60,
-    );
-    final emojiPara = _buildParagraph(secret.emoji, emojiStyle, width / 2 - padding);
-    canvas.drawParagraph(emojiPara, Offset(padding + 20, iconSectionHeight / 2 - 35));
-
-    // Right half: "COLLECT" label
-    final collectStyle = ui.TextStyle(
-      color: const Color(0xFF666666),
-      fontSize: 14,
-    );
-    final collectPara = _buildParagraph('Add to your\ncollection!', collectStyle, width / 2 - padding, textAlign: ui.TextAlign.center);
-    canvas.drawParagraph(collectPara, Offset(width / 2 + 10, iconSectionHeight / 2 - 20));
-
-    // Vertical divider in icon section
-    canvas.drawLine(
-      Offset(width / 2, padding),
-      Offset(width / 2, iconSectionHeight - padding),
-      Paint()
-        ..color = const Color(0xFFCCCCCC)
-        ..strokeWidth = 1,
-    );
+    // Big centered icon
+    final emojiStyle = ui.TextStyle(color: const Color(0xFF000000), fontSize: 70);
+    final emojiPara = _buildParagraph(secret.emoji, emojiStyle, width - padding * 2, textAlign: ui.TextAlign.center);
+    canvas.drawParagraph(emojiPara, Offset(padding, iconSectionHeight / 2 - 40));
 
     // === FOLD LINE ===
-    _drawFoldLine(canvas, iconSectionHeight, width, '↓ FOLD HERE ↓');
+    _drawFoldLine(canvas, iconSectionHeight, width, '↓ FOLD ↓');
 
-    // === TEXT SECTION (bottom 3/4) ===
-    final textY = iconSectionHeight + 30;
+    // === TEXT SECTION ===
+    final textY = iconSectionHeight + 25;
 
-    // Icon + name header
-    final nameStyle = ui.TextStyle(
-      color: const Color(0xFF000000),
-      fontSize: 26,
-      fontWeight: ui.FontWeight.bold,
-    );
+    // Icon + name header (big)
+    final nameStyle = ui.TextStyle(color: const Color(0xFF000000), fontSize: 32, fontWeight: ui.FontWeight.bold);
     final namePara = _buildParagraph('${secret.emoji} ${secret.name}', nameStyle, width - padding * 2, textAlign: ui.TextAlign.center);
     canvas.drawParagraph(namePara, Offset(padding, textY));
 
     // Separator
-    canvas.drawLine(
-      Offset(padding, textY + 40),
-      Offset(width - padding, textY + 40),
-      Paint()..strokeWidth = 1,
-    );
+    canvas.drawLine(Offset(padding, textY + 50), Offset(width - padding, textY + 50), Paint()..strokeWidth = 2);
 
-    // "EFFECT:" label
-    final effectLabelStyle = ui.TextStyle(
-      color: const Color(0xFF666666),
-      fontSize: 14,
-      fontWeight: ui.FontWeight.bold,
-    );
-    final effectLabelPara = _buildParagraph('EFFECT:', effectLabelStyle, width - padding * 2, textAlign: ui.TextAlign.center);
-    canvas.drawParagraph(effectLabelPara, Offset(padding, textY + 50));
-
-    // Effect text
-    final effectStyle = ui.TextStyle(
-      color: const Color(0xFF000000),
-      fontSize: 20,
-    );
+    // Effect text (bigger)
+    final effectStyle = ui.TextStyle(color: const Color(0xFF000000), fontSize: 24);
     final effectPara = _buildParagraph(secret.effect, effectStyle, width - padding * 2, textAlign: ui.TextAlign.center);
-    canvas.drawParagraph(effectPara, Offset(padding, textY + 75));
+    canvas.drawParagraph(effectPara, Offset(padding, textY + 70));
 
-    // Second fold line (for triple fold)
-    _drawFoldLine(canvas, iconSectionHeight + textSectionHeight / 2, width, '↑ FOLD ↑');
-
-    // Win reminder at bottom
-    final winStyle = ui.TextStyle(
-      color: const Color(0xFF999999),
-      fontSize: 12,
-    );
-    final winPara = _buildParagraph('🏆 3 matching icons = WIN!', winStyle, width - padding * 2, textAlign: ui.TextAlign.center);
-    canvas.drawParagraph(winPara, Offset(padding, totalHeight - 35));
+    // Second fold line
+    _drawFoldLine(canvas, totalHeight - 60, width, '↑ FOLD ↑');
 
     final picture = recorder.endRecording();
     final img = await picture.toImage(width.toInt(), totalHeight.toInt());
@@ -812,9 +787,9 @@ class _MazeGameScreenState extends State<MazeGameScreen> {
     // Draw corner markers
     _drawCornerMarkers(canvas, size, pathColor);
 
-    // If start tile, add rules text
+    // If start tile, add START label
     if (tile.isStartTile) {
-      _drawStartTileRules(canvas, size, pathColor);
+      _drawStartTileLabel(canvas, size, pathColor);
     }
 
     final picture = recorder.endRecording();
@@ -824,93 +799,51 @@ class _MazeGameScreenState extends State<MazeGameScreen> {
     return byteData!.buffer.asUint8List();
   }
 
-  /// Draw a North indicator arrow
+  /// Draw a North indicator arrow - big and visible
   void _drawNorthIndicator(Canvas canvas, double size, int rotation, Color color) {
     canvas.save();
-    canvas.translate(size - 35, 35); // Top-right corner
+    canvas.translate(size - 45, 45); // Top-right corner
     canvas.rotate(rotation * pi / 180);
 
-    // Draw arrow pointing up
+    // Draw background circle for visibility
+    final bgColor = _blackBackground ? const Color(0xFF000000) : const Color(0xFFFFFFFF);
+    canvas.drawCircle(Offset.zero, 32, Paint()..color = bgColor);
+    canvas.drawCircle(Offset.zero, 32, Paint()..color = color..style = PaintingStyle.stroke..strokeWidth = 3);
+
+    // Draw big arrow pointing up
     final paint = Paint()
       ..color = color
       ..style = PaintingStyle.fill;
 
     final path = Path();
-    path.moveTo(0, -15); // Tip
-    path.lineTo(-10, 10); // Bottom left
-    path.lineTo(0, 5); // Notch
-    path.lineTo(10, 10); // Bottom right
+    path.moveTo(0, -22); // Tip
+    path.lineTo(-14, 12); // Bottom left
+    path.lineTo(0, 4); // Notch
+    path.lineTo(14, 12); // Bottom right
     path.close();
 
     canvas.drawPath(path, paint);
 
-    // Draw "N" below arrow
-    final textStyle = ui.TextStyle(
-      color: color,
-      fontSize: 14,
-      fontWeight: ui.FontWeight.bold,
-    );
-    final para = _buildParagraph('⬆', textStyle, 30, textAlign: ui.TextAlign.center);
-    canvas.drawParagraph(para, const Offset(-15, -8));
-
     canvas.restore();
   }
 
-  /// Draw rules on the start tile
-  void _drawStartTileRules(Canvas canvas, double size, Color color) {
-    // Draw a larger rules box in the center
+  /// Draw "START" label on the start tile
+  void _drawStartTileLabel(Canvas canvas, double size, Color color) {
     final bgColor = _blackBackground ? const Color(0xFF000000) : const Color(0xFFFFFFFF);
     
-    const boxWidth = 240.0;
-    const boxHeight = 180.0;
-    
+    // Small label in center
     canvas.drawRect(
-      Rect.fromLTWH(size / 2 - boxWidth / 2, size / 2 - boxHeight / 2, boxWidth, boxHeight),
+      Rect.fromLTWH(size / 2 - 50, size / 2 - 20, 100, 40),
       Paint()..color = bgColor,
     );
     canvas.drawRect(
-      Rect.fromLTWH(size / 2 - boxWidth / 2, size / 2 - boxHeight / 2, boxWidth, boxHeight),
-      Paint()
-        ..color = color
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 2,
+      Rect.fromLTWH(size / 2 - 50, size / 2 - 20, 100, 40),
+      Paint()..color = color..style = PaintingStyle.stroke..strokeWidth = 2,
     );
 
-    final titleStyle = ui.TextStyle(
-      color: color,
-      fontSize: 13,
-      fontWeight: ui.FontWeight.bold,
-    );
-    final titlePara = _buildParagraph('MAZE EXPLORER', titleStyle, boxWidth - 20, textAlign: ui.TextAlign.center);
-    canvas.drawParagraph(titlePara, Offset(size / 2 - boxWidth / 2 + 10, size / 2 - boxHeight / 2 + 8));
-
-    final winStyle = ui.TextStyle(
-      color: color,
-      fontSize: 10,
-      fontWeight: ui.FontWeight.bold,
-    );
-    final winPara = _buildParagraph('🏆 Collect 3 matching icons to win!', winStyle, boxWidth - 20, textAlign: ui.TextAlign.center);
-    canvas.drawParagraph(winPara, Offset(size / 2 - boxWidth / 2 + 10, size / 2 - boxHeight / 2 + 26));
-
-    final rulesStyle = ui.TextStyle(
-      color: color,
-      fontSize: 9,
-    );
-    final rulesPara = _buildParagraph(
-      'MOVE: Move 1 tile\n'
-      'MAP: Place a tile to expand the maze.\n'
-      'If you can\'t place it, save for later.\n'
-      'Tiles must form at least 1 passage.\n'
-      '⬆ = must orient toward North',
-      rulesStyle, boxWidth - 20, textAlign: ui.TextAlign.left);
-    canvas.drawParagraph(rulesPara, Offset(size / 2 - boxWidth / 2 + 10, size / 2 - boxHeight / 2 + 45));
-
-    final iconsStyle = ui.TextStyle(
-      color: color,
-      fontSize: 16,
-    );
-    final iconsPara = _buildParagraph('💎 💀 🐀 🪙 👁️', iconsStyle, boxWidth - 20, textAlign: ui.TextAlign.center);
-    canvas.drawParagraph(iconsPara, Offset(size / 2 - boxWidth / 2 + 10, size / 2 + boxHeight / 2 - 30));
+    final style = ui.TextStyle(color: color, fontSize: 20, fontWeight: ui.FontWeight.bold);
+    final para = _buildParagraph('START', style, 90, textAlign: ui.TextAlign.center);
+    canvas.drawParagraph(para, Offset(size / 2 - 45, size / 2 - 12));
   }
 
   /// Draw a rugged cave-style path from center to edge
@@ -1077,6 +1010,7 @@ class _MazeGameScreenState extends State<MazeGameScreen> {
       _tiles = [];
       _currentPrintIndex = 0;
       _printingEffectSheet = false;
+      _printedRules = false;
     });
   }
 }
