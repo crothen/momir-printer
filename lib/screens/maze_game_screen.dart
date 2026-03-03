@@ -59,10 +59,10 @@ class MazeSecret {
   /// All possible effects (randomly assigned to icons)
   static const List<String> allEffects = [
     'The next player can only MOVE (no mapping).',
-    'Take another turn immediately.',
+    'Take an extra action immediately.',
     'Next time you MOVE, you must MAP first.',
     'Choose a player. Their next action must be MAP.',
-    'Skip your next turn.',
+    'Skip your next action.',
     'Ignore the next ⬆ (North) on a tile you play.',
     'Swap your next MOVE and MAP actions.',
     'Force the previous player to take back their last tile.',
@@ -74,7 +74,7 @@ class MazeSecret {
     'Teleport to any tile with a 💎 on it.',
     'Teleport to any tile with a 👁️ on it.',
     'Steal a collected icon from another player.',
-    'Discard one of your collected icons to take 2 extra turns.',
+    'Discard one of your collected icons to take 2 extra actions.',
   ];
 }
 
