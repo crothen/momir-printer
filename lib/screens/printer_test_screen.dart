@@ -24,6 +24,7 @@ class _PrinterTestScreenState extends State<PrinterTestScreen> {
   int _feedLines = 80;
   bool _useCompression = false;
   int _rowDelayMs = 5;
+  bool _invertImage = false;
   
   // Test patterns
   String _selectedPattern = 'gradient';
@@ -69,7 +70,10 @@ class _PrinterTestScreenState extends State<PrinterTestScreen> {
   }
 
   Future<void> _generatePreview() async {
-    final data = _generateTestPattern(_selectedPattern, _previewWidth, _previewHeight);
+    var data = _generateTestPattern(_selectedPattern, _previewWidth, _previewHeight);
+    if (_invertImage) {
+      data = Uint8List.fromList(data.map((b) => b ^ 0xFF).toList());
+    }
     setState(() {
       _previewData = data;
     });
@@ -209,8 +213,25 @@ class _PrinterTestScreenState extends State<PrinterTestScreen> {
     _addLog('Settings: energy=$_energy, speed=$_speed, feed=$_feedLines');
     
     try {
-      final imageData = _generateTestPattern(_selectedPattern, _previewWidth, _previewHeight);
-      _addLog('Generated ${imageData.length} bytes (${_previewWidth}x$_previewHeight)');
+      var imageData = _generateTestPattern(_selectedPattern, _previewWidth, _previewHeight);
+      
+      // Invert if needed
+      if (_invertImage) {
+        imageData = Uint8List.fromList(imageData.map((b) => b ^ 0xFF).toList());
+        _addLog('Image inverted (polarity swapped)');
+      }
+      
+      // Count black pixels for diagnostic
+      int blackPixels = 0;
+      for (final byte in imageData) {
+        for (var i = 0; i < 8; i++) {
+          if ((byte >> i) & 1 == 1) blackPixels++;
+        }
+      }
+      final totalPixels = _previewWidth * _previewHeight;
+      final density = (blackPixels / totalPixels * 100).toStringAsFixed(1);
+      
+      _addLog('Generated ${imageData.length} bytes (${_previewWidth}x$_previewHeight), $blackPixels black pixels ($density%)');
       
       bool success = false;
       
@@ -482,6 +503,18 @@ class _PrinterTestScreenState extends State<PrinterTestScreen> {
                         onChanged: (v) => setState(() => _useCompression = v),
                         contentPadding: EdgeInsets.zero,
                       ),
+                    
+                    // Invert image toggle
+                    SwitchListTile(
+                      title: const Text('Invert image'),
+                      subtitle: const Text('Swap black/white (test polarity)'),
+                      value: _invertImage,
+                      onChanged: (v) {
+                        setState(() => _invertImage = v);
+                        _generatePreview();
+                      },
+                      contentPadding: EdgeInsets.zero,
+                    ),
                   ],
                 ),
               ),
