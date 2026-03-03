@@ -60,15 +60,9 @@ class MazeSecret {
   static const List<String> allEffects = [
     'The next player can only MOVE (no mapping).',
     'Take an extra action immediately.',
-    'Next time you MOVE, you must MAP first.',
     'Choose a player. Their next action must be MAP.',
     'Skip your next action.',
     'Ignore the next ⬆ (North) on a tile you play.',
-    'Swap your next MOVE and MAP actions.',
-    'Force the previous player to take back their last tile.',
-    'Block the next effect that targets you.',
-    'Look at the top 3 tiles, put them back in any order.',
-    'Draw 2 tiles, keep 1, discard the other.',
     'Your next MAP action lets you place 2 tiles.',
     'Teleport to any tile with a 💀 on it.',
     'Teleport to any tile with a 💎 on it.',
@@ -76,8 +70,10 @@ class MazeSecret {
     'Teleport to any tile with a 🐀 on it.',
     'Teleport to any tile with a 🪙 on it.',
     'Steal a collected icon from another player.',
-    'Discard one of your collected icons to take 2 extra actions.',
     'Switch 2 placed tiles. Both must still form at least 1 passage.',
+    'Swap places with another player.',
+    'Move another player 1 tile in any direction.',
+    'Immediately use the effect of one of your collected cards.',
   ];
 }
 
