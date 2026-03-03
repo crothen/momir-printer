@@ -28,10 +28,13 @@ class BleManager {
   /// Get info about the connected characteristic for debugging
   String? get connectedCharacteristicInfo {
     if (_writeCharacteristic == null) return null;
-    final svc = _writeCharacteristic!.serviceUuid.toString().substring(4, 8);
-    final char = _writeCharacteristic!.uuid.toString().substring(4, 8);
+    final svcFull = _writeCharacteristic!.serviceUuid.toString().toLowerCase();
+    final charFull = _writeCharacteristic!.uuid.toString().toLowerCase();
+    // Extract the short UUID (e.g., "ae30" from "0000ae30-...")
+    final svc = svcFull.length >= 8 ? svcFull.substring(4, 8) : svcFull;
+    final char = charFull.length >= 8 ? charFull.substring(4, 8) : charFull;
     final notify = _notifyCharacteristic != null ? ', notify: on' : '';
-    return 'Service: $svc, Char: $char$notify';
+    return 'Svc: $svc, Char: $char$notify';
   }
 
   /// Check if Bluetooth is available and on
