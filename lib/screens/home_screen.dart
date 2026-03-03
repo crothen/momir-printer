@@ -7,6 +7,7 @@ import 'momir_screen.dart';
 import 'dnd_screen.dart';
 import 'deck_printer_screen.dart';
 import 'werewolf_screen.dart';
+import 'maze_game_screen.dart';
 import 'printer_test_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -156,6 +157,13 @@ class _HomeScreenState extends State<HomeScreen> {
                     onTap: () => _navigateToMode('werewolf'),
                   ),
                   _ModeCard(
+                    title: 'Maze Explorer',
+                    subtitle: 'Cave dungeon tiles',
+                    icon: Icons.explore,
+                    color: Colors.brown,
+                    onTap: () => _navigateToMode('maze'),
+                  ),
+                  _ModeCard(
                     title: 'Printer Test',
                     subtitle: 'Debug & settings',
                     icon: Icons.bug_report,
@@ -207,6 +215,12 @@ class _HomeScreenState extends State<HomeScreen> {
         Navigator.push(
           context,
           MaterialPageRoute(builder: (context) => const WerewolfScreen()),
+        );
+        break;
+      case 'maze':
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const MazeGameScreen()),
         );
         break;
       case 'test':
