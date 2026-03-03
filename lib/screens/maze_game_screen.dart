@@ -135,11 +135,12 @@ class _MazeGameScreenState extends State<MazeGameScreen> {
   // Game state
   bool _gameStarted = false;
   bool _isPrinting = false;
-  bool _printingEffectSheet = false;
   bool _printedRules = false;
   bool _printedStartTile = false;
   MazeTile? _currentTile; // Current tile to print
   int _tilesPrinted = 0;
+  bool _awaitingEffectPrint = false; // True after tile printed, waiting for effect card
+  MazeSecret? _pendingSecret; // Secret waiting to be printed
 
   @override
   Widget build(BuildContext context) {
@@ -378,6 +379,11 @@ class _MazeGameScreenState extends State<MazeGameScreen> {
       return _buildStartTilePrint();
     }
     
+    // If waiting to print effect card
+    if (_awaitingEffectPrint) {
+      return _buildEffectCardPrint();
+    }
+    
     // Generate next tile if needed
     _currentTile ??= _generateNextTile();
     final tile = _currentTile!;
@@ -395,7 +401,7 @@ class _MazeGameScreenState extends State<MazeGameScreen> {
                   const CircularProgressIndicator(color: Colors.white),
                   const SizedBox(height: 24),
                   Text(
-                    _printingEffectSheet ? 'Printing...' : 'Printing tile...',
+                    'Printing tile...',
                     style: const TextStyle(fontSize: 24, color: Colors.white),
                   ),
                 ] else ...[
@@ -502,6 +508,45 @@ class _MazeGameScreenState extends State<MazeGameScreen> {
     );
   }
   
+  Widget _buildEffectCardPrint() {
+    return Container(
+      color: const Color(0xFF3a2a3a),
+      child: SafeArea(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (_isPrinting) ...[
+                  const CircularProgressIndicator(color: Colors.white),
+                  const SizedBox(height: 24),
+                  const Text('Printing effect card...', style: TextStyle(fontSize: 24, color: Colors.white)),
+                ] else ...[
+                  Text(_pendingSecret?.emoji ?? '?', style: const TextStyle(fontSize: 80)),
+                  const SizedBox(height: 16),
+                  const Text('Tear off the tile first!', style: TextStyle(fontSize: 20, color: Colors.amber, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8),
+                  const Text('Then print the effect card', style: TextStyle(fontSize: 16, color: Colors.white70)),
+                  const SizedBox(height: 48),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 56,
+                    child: ElevatedButton.icon(
+                      onPressed: _printEffectCard,
+                      icon: const Icon(Icons.print, size: 24),
+                      label: Text(_demoMode ? 'Preview Effect Card' : 'Print Effect Card', style: const TextStyle(fontSize: 18)),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildStartTilePrint() {
     return Container(
       color: const Color(0xFF2a2a3a),
@@ -580,18 +625,32 @@ class _MazeGameScreenState extends State<MazeGameScreen> {
     final tileImage = await _generateTileImage(tile);
     await _printOrPreview(tileImage, 'Tile #${_tilesPrinted + 1}');
 
-    // If tile has a secret, print the effect sheet too
-    if (tile.secret != null) {
-      setState(() => _printingEffectSheet = true);
-      final effectImage = await _generateEffectSheet(tile.secret!);
-      await _printOrPreview(effectImage, 'Effect');
-    }
-
     setState(() {
       _isPrinting = false;
-      _printingEffectSheet = false;
       _tilesPrinted++;
+      
+      // If tile has a secret, wait for user to print effect card
+      if (tile.secret != null) {
+        _awaitingEffectPrint = true;
+        _pendingSecret = tile.secret;
+      }
+      
       _currentTile = null; // Generate new tile next time
+    });
+  }
+
+  Future<void> _printEffectCard() async {
+    if (_pendingSecret == null) return;
+    
+    setState(() => _isPrinting = true);
+    
+    final effectImage = await _generateEffectSheet(_pendingSecret!);
+    await _printOrPreview(effectImage, 'Effect');
+    
+    setState(() {
+      _isPrinting = false;
+      _awaitingEffectPrint = false;
+      _pendingSecret = null;
     });
   }
 
@@ -1125,11 +1184,12 @@ class _MazeGameScreenState extends State<MazeGameScreen> {
     setState(() {
       _gameStarted = false;
       _isPrinting = false;
-      _printingEffectSheet = false;
       _printedRules = false;
       _printedStartTile = false;
       _currentTile = null;
       _tilesPrinted = 0;
+      _awaitingEffectPrint = false;
+      _pendingSecret = null;
     });
   }
 }
