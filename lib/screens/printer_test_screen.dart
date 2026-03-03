@@ -23,6 +23,7 @@ class _PrinterTestScreenState extends State<PrinterTestScreen> {
   int _speed = 0x19;
   int _feedLines = 80;
   bool _useCompression = false;
+  int _rowDelayMs = 5;
   
   // Test patterns
   String _selectedPattern = 'gradient';
@@ -55,8 +56,16 @@ class _PrinterTestScreenState extends State<PrinterTestScreen> {
   void _addLog(String message) {
     setState(() {
       _log.insert(0, '[${DateTime.now().toString().substring(11, 19)}] $message');
-      if (_log.length > 50) _log.removeLast();
+      if (_log.length > 100) _log.removeLast();
     });
+  }
+
+  void _copyLog() {
+    final logText = _log.reversed.join('\n');
+    Clipboard.setData(ClipboardData(text: logText));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Log copied to clipboard')),
+    );
   }
 
   Future<void> _generatePreview() async {
@@ -239,6 +248,8 @@ class _PrinterTestScreenState extends State<PrinterTestScreen> {
   Future<bool> _printWithCatProtocol(Uint8List imageData) async {
     final protocol = CatPrinterProtocol(_bluetooth);
     
+    _addLog('Cat: Settings - energy=${(_energy * 100).round()}%, speed=0x${_speed.toRadixString(16)}, compression=$_useCompression, rowDelay=${_rowDelayMs}ms');
+    
     _addLog('Cat: Setting energy ${(_energy * 100).round()}%');
     if (!await protocol.setEnergy(_energy)) {
       _addLog('Cat: setEnergy failed');
@@ -246,30 +257,29 @@ class _PrinterTestScreenState extends State<PrinterTestScreen> {
     }
     await Future.delayed(const Duration(milliseconds: 50));
     
-    _addLog('Cat: Setting speed $_speed');
+    _addLog('Cat: Setting speed 0x${_speed.toRadixString(16)}');
     if (!await protocol.setSpeed(_speed)) {
       _addLog('Cat: setSpeed failed');
     }
     await Future.delayed(const Duration(milliseconds: 50));
     
-    _addLog('Cat: Starting lattice mode');
-    if (!await protocol.startLattice()) {
-      _addLog('Cat: startLattice failed');
-      return false;
-    }
-    await Future.delayed(const Duration(milliseconds: 50));
+    _addLog('Cat: Printing $_previewHeight rows (compression=$_useCompression, delay=${_rowDelayMs}ms)...');
     
-    _addLog('Cat: Printing $_previewHeight rows...');
-    if (!await protocol.printImage(imageData, _previewWidth, _previewHeight)) {
+    final success = await protocol.printImage(
+      imageData, 
+      _previewWidth, 
+      _previewHeight,
+      useCompression: _useCompression,
+      rowDelayMs: _rowDelayMs,
+      onProgress: (row, total, message) {
+        _addLog('Cat: $message');
+      },
+    );
+    
+    if (!success) {
       _addLog('Cat: printImage failed');
       return false;
     }
-    
-    _addLog('Cat: Ending lattice mode');
-    if (!await protocol.endLattice()) {
-      _addLog('Cat: endLattice failed');
-    }
-    await Future.delayed(const Duration(milliseconds: 100));
     
     _addLog('Cat: Feeding $_feedLines lines');
     if (!await protocol.feedPaper(_feedLines)) {
@@ -318,13 +328,6 @@ class _PrinterTestScreenState extends State<PrinterTestScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Printer Test'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.delete_outline),
-            onPressed: () => setState(() => _log.clear()),
-            tooltip: 'Clear log',
-          ),
-        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -450,6 +453,35 @@ class _PrinterTestScreenState extends State<PrinterTestScreen> {
                         SizedBox(width: 50, child: Text('$_feedLines')),
                       ],
                     ),
+                    
+                    // Row delay (cat printer)
+                    if (_selectedProtocol == PrinterType.catPrinter)
+                      Row(
+                        children: [
+                          const SizedBox(width: 80, child: Text('Row delay:')),
+                          Expanded(
+                            child: Slider(
+                              value: _rowDelayMs.toDouble(),
+                              min: 0,
+                              max: 50,
+                              divisions: 50,
+                              label: '$_rowDelayMs ms',
+                              onChanged: (v) => setState(() => _rowDelayMs = v.round()),
+                            ),
+                          ),
+                          SizedBox(width: 50, child: Text('${_rowDelayMs}ms')),
+                        ],
+                      ),
+                    
+                    // Compression toggle (cat printer)
+                    if (_selectedProtocol == PrinterType.catPrinter)
+                      SwitchListTile(
+                        title: const Text('Use RLE compression'),
+                        subtitle: const Text('May help with dense patterns'),
+                        value: _useCompression,
+                        onChanged: (v) => setState(() => _useCompression = v),
+                        contentPadding: EdgeInsets.zero,
+                      ),
                   ],
                 ),
               ),
@@ -532,7 +564,24 @@ class _PrinterTestScreenState extends State<PrinterTestScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Debug Log', style: TextStyle(fontWeight: FontWeight.bold)),
+                    Row(
+                      children: [
+                        const Text('Debug Log', style: TextStyle(fontWeight: FontWeight.bold)),
+                        const Spacer(),
+                        IconButton(
+                          icon: const Icon(Icons.copy, size: 20),
+                          onPressed: _log.isEmpty ? null : _copyLog,
+                          tooltip: 'Copy log',
+                          visualDensity: VisualDensity.compact,
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.delete_outline, size: 20),
+                          onPressed: _log.isEmpty ? null : () => setState(() => _log.clear()),
+                          tooltip: 'Clear log',
+                          visualDensity: VisualDensity.compact,
+                        ),
+                      ],
+                    ),
                     const SizedBox(height: 8),
                     Container(
                       height: 200,

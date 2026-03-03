@@ -192,15 +192,35 @@ class CatPrinterProtocol {
   /// [imageData] - packed bytes, MSB first, black=1
   /// [width] - pixels per line (should be 384)
   /// [height] - number of lines
-  Future<bool> printImage(Uint8List imageData, int width, int height) async {
+  /// [useCompression] - use RLE compression (may be required for dense images)
+  /// [rowDelayMs] - delay between rows in milliseconds
+  /// [onProgress] - callback for progress updates
+  Future<bool> printImage(
+    Uint8List imageData, 
+    int width, 
+    int height, {
+    bool useCompression = false,
+    int rowDelayMs = 5,
+    void Function(int row, int total, String message)? onProgress,
+  }) async {
     final bytesPerLine = (width + 7) ~/ 8;
     
+    onProgress?.call(0, height, 'Initializing...');
+    
     // Initialize
-    if (!await initialize()) return false;
+    if (!await initialize()) {
+      onProgress?.call(0, height, 'ERROR: Initialize failed');
+      return false;
+    }
     await Future.delayed(const Duration(milliseconds: 100));
     
+    onProgress?.call(0, height, 'Starting lattice mode...');
+    
     // Start lattice mode
-    if (!await startLattice()) return false;
+    if (!await startLattice()) {
+      onProgress?.call(0, height, 'ERROR: Start lattice failed');
+      return false;
+    }
     await Future.delayed(const Duration(milliseconds: 50));
     
     // Print each row
@@ -212,19 +232,41 @@ class CatPrinterProtocol {
       
       final lineData = imageData.sublist(lineStart, lineEnd);
       
-      // Use uncompressed for reliability
-      if (!await _printRowUncompressed(lineData)) return false;
+      bool success;
+      if (useCompression) {
+        success = await _printRowCompressed(lineData);
+        if (y == 0) onProgress?.call(y, height, 'Using RLE compression');
+      } else {
+        success = await _printRowUncompressed(lineData);
+        if (y == 0) onProgress?.call(y, height, 'Using uncompressed data');
+      }
+      
+      if (!success) {
+        onProgress?.call(y, height, 'ERROR: Row $y failed');
+        return false;
+      }
+      
+      // Progress update every 10 rows
+      if (y % 10 == 0) {
+        onProgress?.call(y, height, 'Printing row $y/$height');
+      }
       
       // Throttle to prevent buffer overflow
-      if (y % 4 == 0) {
-        await Future.delayed(const Duration(milliseconds: 10));
+      if (rowDelayMs > 0) {
+        await Future.delayed(Duration(milliseconds: rowDelayMs));
       }
     }
     
+    onProgress?.call(height, height, 'Ending lattice mode...');
+    
     // End lattice mode
-    if (!await endLattice()) return false;
+    if (!await endLattice()) {
+      onProgress?.call(height, height, 'ERROR: End lattice failed');
+      return false;
+    }
     await Future.delayed(const Duration(milliseconds: 100));
     
+    onProgress?.call(height, height, 'Done!');
     return true;
   }
   
