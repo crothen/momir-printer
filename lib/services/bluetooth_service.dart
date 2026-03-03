@@ -11,6 +11,7 @@ class BleManager {
   // Connection state
   fbp.BluetoothDevice? _connectedDevice;
   fbp.BluetoothCharacteristic? _writeCharacteristic;
+  fbp.BluetoothCharacteristic? _notifyCharacteristic;
   StreamSubscription<fbp.BluetoothConnectionState>? _connectionSubscription;
 
   // State streams
@@ -27,9 +28,10 @@ class BleManager {
   /// Get info about the connected characteristic for debugging
   String? get connectedCharacteristicInfo {
     if (_writeCharacteristic == null) return null;
-    final svc = _writeCharacteristic!.serviceUuid.toString();
-    final char = _writeCharacteristic!.uuid.toString();
-    return 'Service: $svc, Char: $char';
+    final svc = _writeCharacteristic!.serviceUuid.toString().substring(4, 8);
+    final char = _writeCharacteristic!.uuid.toString().substring(4, 8);
+    final notify = _notifyCharacteristic != null ? ', notify: on' : '';
+    return 'Service: $svc, Char: $char$notify';
   }
 
   /// Check if Bluetooth is available and on
@@ -84,6 +86,16 @@ class BleManager {
       if (_writeCharacteristic == null) {
         await disconnect();
         return false;
+      }
+      
+      // Find and enable notifications on ae02 (required by some printers)
+      _notifyCharacteristic = _findNotifyCharacteristic(services);
+      if (_notifyCharacteristic != null) {
+        try {
+          await _notifyCharacteristic!.setNotifyValue(true);
+        } catch (e) {
+          // Ignore notification errors - not all printers need this
+        }
       }
       
       _updateState(BleConnectionState.connected);
@@ -146,10 +158,34 @@ class BleManager {
     return null;
   }
 
+  /// Find the notify characteristic for thermal printers (ae02)
+  fbp.BluetoothCharacteristic? _findNotifyCharacteristic(List<fbp.BluetoothService> services) {
+    for (final svc in services) {
+      final svcUuid = svc.uuid.toString().toLowerCase();
+      if (svcUuid.contains('ae30')) {
+        for (final char in svc.characteristics) {
+          final charUuid = char.uuid.toString().toLowerCase();
+          if (charUuid.contains('ae02') && char.properties.notify) {
+            return char;
+          }
+        }
+      }
+    }
+    return null;
+  }
+
   /// Disconnect from current device
   Future<void> disconnect() async {
     _connectionSubscription?.cancel();
     _connectionSubscription = null;
+    
+    if (_notifyCharacteristic != null) {
+      try {
+        await _notifyCharacteristic!.setNotifyValue(false);
+      } catch (e) {
+        // Ignore
+      }
+    }
     
     if (_connectedDevice != null) {
       await _connectedDevice!.disconnect();
@@ -157,6 +193,7 @@ class BleManager {
     }
     
     _writeCharacteristic = null;
+    _notifyCharacteristic = null;
     _updateState(BleConnectionState.disconnected);
   }
 
@@ -164,6 +201,7 @@ class BleManager {
   void _handleDisconnection() {
     _connectedDevice = null;
     _writeCharacteristic = null;
+    _notifyCharacteristic = null;
     _connectionSubscription?.cancel();
     _connectionSubscription = null;
     _updateState(BleConnectionState.disconnected);
