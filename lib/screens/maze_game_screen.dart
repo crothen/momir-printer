@@ -830,8 +830,8 @@ class _MazeGameScreenState extends State<MazeGameScreen> {
   /// Generate a foldable effect sheet for a secret
   Future<Uint8List> _generateEffectSheet(MazeSecret secret) async {
     const width = 384.0;
-    const totalHeight = 450.0;
-    const iconSectionHeight = totalHeight / 4;
+    const totalHeight = 400.0;
+    const iconSectionHeight = 120.0;
     const padding = 24.0;
 
     final recorder = ui.PictureRecorder();
@@ -846,33 +846,25 @@ class _MazeGameScreenState extends State<MazeGameScreen> {
       Paint()..color = const Color(0xFF000000)..style = PaintingStyle.stroke..strokeWidth = 2,
     );
 
-    // === ICON SECTION (top 1/4) ===
-    // Big centered icon
+    // === ICON SECTION (top) ===
+    // Icon on the left side
     final emojiStyle = ui.TextStyle(color: const Color(0xFF000000), fontSize: 70);
-    final emojiPara = _buildParagraph(secret.emoji, emojiStyle, width - padding * 2, textAlign: ui.TextAlign.center);
-    canvas.drawParagraph(emojiPara, Offset(padding, iconSectionHeight / 2 - 40));
+    final emojiPara = _buildParagraph(secret.emoji, emojiStyle, 100);
+    canvas.drawParagraph(emojiPara, Offset(padding + 20, iconSectionHeight / 2 - 40));
 
     // === FOLD LINE ===
     _drawFoldLine(canvas, iconSectionHeight, width, '↓ FOLD ↓');
 
-    // === TEXT SECTION ===
-    final textY = iconSectionHeight + 25;
+    // === EFFECT TEXT SECTION ===
+    final textY = iconSectionHeight + 30;
 
-    // Icon + name header (big)
-    final nameStyle = ui.TextStyle(color: const Color(0xFF000000), fontSize: 32, fontWeight: ui.FontWeight.bold);
-    final namePara = _buildParagraph('${secret.emoji} ${secret.name}', nameStyle, width - padding * 2, textAlign: ui.TextAlign.center);
-    canvas.drawParagraph(namePara, Offset(padding, textY));
-
-    // Separator
-    canvas.drawLine(Offset(padding, textY + 50), Offset(width - padding, textY + 50), Paint()..strokeWidth = 2);
-
-    // Effect text (bigger)
-    final effectStyle = ui.TextStyle(color: const Color(0xFF000000), fontSize: 24);
+    // Effect text (big, centered)
+    final effectStyle = ui.TextStyle(color: const Color(0xFF000000), fontSize: 26);
     final effectPara = _buildParagraph(secret.effect, effectStyle, width - padding * 2, textAlign: ui.TextAlign.center);
-    canvas.drawParagraph(effectPara, Offset(padding, textY + 70));
+    canvas.drawParagraph(effectPara, Offset(padding, textY));
 
     // Second fold line
-    _drawFoldLine(canvas, totalHeight - 60, width, '↑ FOLD ↑');
+    _drawFoldLine(canvas, totalHeight - 50, width, '↑ FOLD ↑');
 
     final picture = recorder.endRecording();
     final img = await picture.toImage(width.toInt(), totalHeight.toInt());
