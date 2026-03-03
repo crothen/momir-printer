@@ -274,7 +274,8 @@ class _MazeGameScreenState extends State<MazeGameScreen> {
       secret = MazeSecret(icon, effect);
     }
 
-    final hasNorth = shape != TileShape.deadEnd && _random.nextDouble() < _northChance;
+    // Dead ends and crossroads don't need North (no orientation choice / symmetrical)
+    final hasNorth = shape != TileShape.deadEnd && shape != TileShape.crossroads && _random.nextDouble() < _northChance;
     final northRot = [0, 90, 180, 270][_random.nextInt(4)];
 
     return MazeTile(
