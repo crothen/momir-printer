@@ -210,7 +210,8 @@ class _PrinterTestScreenState extends State<PrinterTestScreen> {
     });
     
     _addLog('Starting print with protocol: ${_selectedProtocol.name}');
-    _addLog('Settings: energy=$_energy, speed=$_speed, feed=$_feedLines');
+    _addLog('BLE: ${_bluetooth.connectedCharacteristicInfo ?? "unknown"}');
+    _addLog('Settings: energy=$_energy, speed=$_speed, feed=$_feedLines, invert=$_invertImage');
     
     try {
       var imageData = _generateTestPattern(_selectedPattern, _previewWidth, _previewHeight);
@@ -365,7 +366,17 @@ class _PrinterTestScreenState extends State<PrinterTestScreen> {
                 title: Text(isConnected 
                     ? 'Connected: ${_bluetooth.connectedDeviceName}'
                     : 'Not connected'),
-                subtitle: Text('Detected: ${_selectedProtocol.name}'),
+                subtitle: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Protocol: ${_selectedProtocol.name}'),
+                    if (isConnected && _bluetooth.connectedCharacteristicInfo != null)
+                      Text(
+                        _bluetooth.connectedCharacteristicInfo!,
+                        style: const TextStyle(fontSize: 10, fontFamily: 'monospace'),
+                      ),
+                  ],
+                ),
               ),
             ),
             

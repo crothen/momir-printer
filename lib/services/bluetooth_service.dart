@@ -23,6 +23,14 @@ class BleManager {
 
   fbp.BluetoothDevice? get connectedDevice => _connectedDevice;
   String? get connectedDeviceName => _connectedDevice?.platformName;
+  
+  /// Get info about the connected characteristic for debugging
+  String? get connectedCharacteristicInfo {
+    if (_writeCharacteristic == null) return null;
+    final svc = _writeCharacteristic!.serviceUuid.toString();
+    final char = _writeCharacteristic!.uuid.toString();
+    return 'Service: $svc, Char: $char';
+  }
 
   /// Check if Bluetooth is available and on
   Future<bool> isBluetoothAvailable() async {
