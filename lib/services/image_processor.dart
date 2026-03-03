@@ -14,6 +14,9 @@ class ImageProcessor {
   /// Standard thermal printer width in pixels
   static const defaultWidth = 384;
 
+  /// Bottom padding in pixels (~80 = 1cm at 203 DPI)
+  static const defaultBottomPadding = 80;
+
   /// Convert an image to 1-bit thermal printer format
   /// 
   /// Returns packed bytes (MSB first) ready to send to printer
@@ -23,6 +26,7 @@ class ImageProcessor {
     DitheringAlgorithm algorithm = DitheringAlgorithm.atkinson,
     double contrast = 1.0,
     double brightness = 0.0,
+    int bottomPadding = defaultBottomPadding,
   }) {
     // Decode the image
     final image = img.decodeImage(imageBytes);
@@ -44,8 +48,27 @@ class ImageProcessor {
     // Apply dithering
     final dithered = _applyDithering(grayscale, algorithm);
     
+    // Add bottom padding (white space)
+    final paddedImage = _addBottomPadding(dithered, bottomPadding);
+    
     // Pack into bytes
-    return _packBits(dithered);
+    return _packBits(paddedImage);
+  }
+  
+  /// Add white padding to the bottom of an image
+  static img.Image _addBottomPadding(img.Image image, int padding) {
+    if (padding <= 0) return image;
+    
+    final newHeight = image.height + padding;
+    final padded = img.Image(width: image.width, height: newHeight);
+    
+    // Fill with white
+    img.fill(padded, color: img.ColorRgb8(255, 255, 255));
+    
+    // Copy original image to top
+    img.compositeImage(padded, image, dstX: 0, dstY: 0);
+    
+    return padded;
   }
 
   /// Create a PNG preview of the processed image
@@ -248,6 +271,7 @@ class ImageProcessor {
   static ({int width, int height}) getProcessedDimensions(
     Uint8List imageBytes, {
     int targetWidth = defaultWidth,
+    int bottomPadding = defaultBottomPadding,
   }) {
     final image = img.decodeImage(imageBytes);
     if (image == null) {
@@ -255,7 +279,7 @@ class ImageProcessor {
     }
 
     final aspectRatio = image.height / image.width;
-    final height = (targetWidth * aspectRatio).round();
+    final height = (targetWidth * aspectRatio).round() + bottomPadding;
     
     return (width: targetWidth, height: height);
   }

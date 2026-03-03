@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../services/bluetooth_service.dart';
 import '../services/image_processor.dart';
-import '../printers/phomemo_protocol.dart';
+import '../printers/printer_factory.dart';
 
 class MagicItem {
   final String name;
@@ -414,8 +414,8 @@ class _ItemDetailSheetState extends State<_ItemDetailSheet> {
       final printData = ImageProcessor.processForPrinting(imageBytes);
       final dims = ImageProcessor.getProcessedDimensions(imageBytes);
 
-      final protocol = PhomemoProtocol(widget.bluetooth);
-      await protocol.printFullImage(printData, ImageProcessor.defaultWidth, dims.height, density: 0.65, feedLines: 50);
+      final printer = UnifiedPrinter(widget.bluetooth, widget.bluetooth.connectedDeviceName);
+      await printer.printFullImage(printData, ImageProcessor.defaultWidth, dims.height, density: 0.65, feedLines: 80);
       
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Printed ${widget.item.name}!'), backgroundColor: Colors.green));
     } catch (e) {

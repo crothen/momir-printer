@@ -4,10 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../services/bluetooth_service.dart';
 import '../services/image_processor.dart';
-import '../printers/phomemo_protocol.dart';
+import '../printers/printer_factory.dart';
 
 class DeckCard {
-  final int quantity;
+  int quantity;
+  final int originalQuantity;
   final String name;
   bool isSideboard;
   String? imageUrl;
@@ -16,10 +17,10 @@ class DeckCard {
   String? error;
 
   DeckCard({
-    required this.quantity,
+    required int quantity,
     required this.name,
     this.isSideboard = false,
-  });
+  }) : quantity = quantity, originalQuantity = quantity;
 }
 
 class DeckPrinterScreen extends StatefulWidget {
@@ -222,24 +223,40 @@ class _DeckPrinterScreenState extends State<DeckPrinterScreen> {
               ),
             ),
           
-          // Print button
+          // Print buttons
           if (_mainDeck.isNotEmpty && !_isPrinting)
             SafeArea(
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
-                child: SizedBox(
-                  width: double.infinity,
-                  height: 56,
-                  child: ElevatedButton.icon(
-                    onPressed: _bluetooth.currentState == BleConnectionState.connected ? _printDeck : null,
-                    icon: const Icon(Icons.print, size: 28),
-                    label: Text(
-                      _bluetooth.currentState == BleConnectionState.connected
-                          ? 'Print Deck ($_totalCount cards)'
-                          : 'Connect printer to print',
-                      style: const TextStyle(fontSize: 18),
+                child: Row(
+                  children: [
+                    // Preview button
+                    SizedBox(
+                      height: 56,
+                      child: OutlinedButton.icon(
+                        onPressed: _showDeckPreview,
+                        icon: const Icon(Icons.preview),
+                        label: const Text('Preview'),
+                      ),
                     ),
-                  ),
+                    const SizedBox(width: 12),
+                    // Print button
+                    Expanded(
+                      child: SizedBox(
+                        height: 56,
+                        child: ElevatedButton.icon(
+                          onPressed: _bluetooth.currentState == BleConnectionState.connected ? _printDeck : null,
+                          icon: const Icon(Icons.print, size: 28),
+                          label: Text(
+                            _bluetooth.currentState == BleConnectionState.connected
+                                ? 'Print ($_totalCount)'
+                                : 'Connect printer',
+                            style: const TextStyle(fontSize: 18),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -267,23 +284,259 @@ class _DeckPrinterScreenState extends State<DeckPrinterScreen> {
   }
 
   Widget _buildCardTile(DeckCard card) {
+    final isDifferent = card.quantity != card.originalQuantity;
     return Card(
       margin: const EdgeInsets.only(bottom: 4),
-      child: ListTile(
-        dense: true,
-        leading: CircleAvatar(
-          radius: 16,
-          backgroundColor: card.printed ? Colors.green : Theme.of(context).colorScheme.surfaceContainerHighest,
-          child: card.printed
-              ? const Icon(Icons.check, size: 16, color: Colors.white)
-              : Text('${card.quantity}', style: const TextStyle(fontWeight: FontWeight.bold)),
+      child: InkWell(
+        onTap: () => _showCardPreview(card),
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          child: Row(
+            children: [
+              // Quantity controls
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox(
+                    width: 32,
+                    height: 32,
+                    child: IconButton(
+                      padding: EdgeInsets.zero,
+                      iconSize: 18,
+                      icon: const Icon(Icons.remove),
+                      onPressed: card.quantity > 0
+                          ? () => setState(() => card.quantity--)
+                          : null,
+                    ),
+                  ),
+                  Container(
+                    width: 32,
+                    alignment: Alignment.center,
+                    child: Text(
+                      '${card.quantity}',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: isDifferent ? Theme.of(context).colorScheme.primary : null,
+                      ),
+                    ),
+                  ),
+                  SizedBox(
+                    width: 32,
+                    height: 32,
+                    child: IconButton(
+                      padding: EdgeInsets.zero,
+                      iconSize: 18,
+                      icon: const Icon(Icons.add),
+                      onPressed: () => setState(() => card.quantity++),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(width: 8),
+              // Card name
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(card.name, style: const TextStyle(fontWeight: FontWeight.w500)),
+                    if (isDifferent)
+                      Text(
+                        'was ${card.originalQuantity}',
+                        style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.outline),
+                      ),
+                  ],
+                ),
+              ),
+              // Status indicators
+              if (_currentlyPrinting == card)
+                const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+              else if (card.error != null)
+                Tooltip(message: card.error!, child: Icon(Icons.error, color: Theme.of(context).colorScheme.error))
+              else if (card.printed)
+                const Icon(Icons.check_circle, color: Colors.green, size: 20)
+              else
+                Icon(Icons.visibility, size: 20, color: Theme.of(context).colorScheme.outline),
+            ],
+          ),
         ),
-        title: Text(card.name),
-        trailing: _currentlyPrinting == card
-            ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-            : card.error != null
-                ? Tooltip(message: card.error!, child: Icon(Icons.error, color: Theme.of(context).colorScheme.error))
-                : null,
+      ),
+    );
+  }
+
+  Future<void> _showCardPreview(DeckCard card) async {
+    // If we don't have the image yet, fetch it
+    if (card.imageBytes == null && card.imageUrl == null) {
+      // Show loading dialog
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => const Center(child: CircularProgressIndicator()),
+      );
+      
+      try {
+        final encodedName = Uri.encodeComponent(card.name);
+        final scryfallResponse = await http.get(
+          Uri.parse('https://api.scryfall.com/cards/named?exact=$encodedName'),
+          headers: {'User-Agent': 'MomirPrinter/1.0', 'Accept': 'application/json'},
+        );
+
+        if (scryfallResponse.statusCode == 200) {
+          final json = scryfallResponse.body;
+          final imageMatch = RegExp(r'"normal":\s*"([^"]+)"').firstMatch(json);
+          if (imageMatch != null) {
+            card.imageUrl = imageMatch.group(1)!.replaceAll(r'\u0026', '&');
+            final imageResponse = await http.get(Uri.parse(card.imageUrl!));
+            if (imageResponse.statusCode == 200) {
+              card.imageBytes = imageResponse.bodyBytes;
+            }
+          }
+        }
+      } catch (_) {}
+      
+      if (mounted) Navigator.of(context).pop(); // Close loading
+    }
+
+    if (!mounted) return;
+
+    // Show preview dialog
+    showDialog(
+      context: context,
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (card.imageBytes != null)
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.memory(
+                  card.imageBytes!,
+                  fit: BoxFit.contain,
+                ),
+              )
+            else if (card.imageUrl != null)
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.network(
+                  card.imageUrl!,
+                  fit: BoxFit.contain,
+                  loadingBuilder: (context, child, progress) {
+                    if (progress == null) return child;
+                    return const SizedBox(
+                      height: 400,
+                      child: Center(child: CircularProgressIndicator()),
+                    );
+                  },
+                ),
+              )
+            else
+              Container(
+                padding: const EdgeInsets.all(32),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.errorContainer,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  children: [
+                    Icon(Icons.image_not_supported, size: 48, color: Theme.of(context).colorScheme.error),
+                    const SizedBox(height: 8),
+                    Text('Image not found', style: TextStyle(color: Theme.of(context).colorScheme.error)),
+                  ],
+                ),
+              ),
+            const SizedBox(height: 16),
+            Text(
+              card.name,
+              style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showDeckPreview() async {
+    final allCards = [..._mainDeck, ..._sideboard].where((c) => c.quantity > 0).toList();
+    
+    // Show loading while fetching and processing images
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => const Center(child: CircularProgressIndicator()),
+    );
+
+    // Fetch all missing images and create dithered previews
+    final processedImages = <Uint8List>[];
+    
+    for (var card in allCards) {
+      // Fetch original if needed
+      if (card.imageBytes == null) {
+        try {
+          final encodedName = Uri.encodeComponent(card.name);
+          final scryfallResponse = await http.get(
+            Uri.parse('https://api.scryfall.com/cards/named?exact=$encodedName'),
+            headers: {'User-Agent': 'MomirPrinter/1.0', 'Accept': 'application/json'},
+          );
+
+          if (scryfallResponse.statusCode == 200) {
+            final json = scryfallResponse.body;
+            final imageMatch = RegExp(r'"normal":\s*"([^"]+)"').firstMatch(json);
+            if (imageMatch != null) {
+              card.imageUrl = imageMatch.group(1)!.replaceAll(r'\u0026', '&');
+              final imageResponse = await http.get(Uri.parse(card.imageUrl!));
+              if (imageResponse.statusCode == 200) {
+                card.imageBytes = imageResponse.bodyBytes;
+              }
+            }
+          }
+          await Future.delayed(const Duration(milliseconds: 100));
+        } catch (_) {}
+      }
+      
+      // Create dithered preview for each copy
+      if (card.imageBytes != null) {
+        try {
+          final dithered = ImageProcessor.createPreview(card.imageBytes!);
+          for (int i = 0; i < card.quantity; i++) {
+            processedImages.add(dithered);
+          }
+        } catch (_) {
+          // Skip cards that fail to process
+        }
+      }
+    }
+
+    if (!mounted) return;
+    Navigator.of(context).pop(); // Close loading
+
+    // Show full-screen vertical preview (like a receipt tape)
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (ctx) => Scaffold(
+          backgroundColor: Colors.grey[800],
+          appBar: AppBar(
+            title: Text('Print Preview (${processedImages.length} cards)'),
+            backgroundColor: Colors.grey[900],
+          ),
+          body: Center(
+            child: Container(
+              width: 384, // Printer width
+              color: Colors.white,
+              child: ListView.builder(
+                itemCount: processedImages.length,
+                itemBuilder: (context, index) {
+                  return Image.memory(
+                    processedImages[index],
+                    fit: BoxFit.fitWidth,
+                    filterQuality: FilterQuality.none, // Keep it pixelated
+                  );
+                },
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -386,7 +639,7 @@ class _DeckPrinterScreenState extends State<DeckPrinterScreen> {
       }
     });
 
-    final protocol = PhomemoProtocol(_bluetooth);
+    final printer = UnifiedPrinter(_bluetooth, _bluetooth.connectedDeviceName);
     final allCards = [..._mainDeck, ..._sideboard];
 
     for (var card in allCards) {
@@ -426,15 +679,16 @@ class _DeckPrinterScreenState extends State<DeckPrinterScreen> {
 
         // Print each copy
         for (int i = 0; i < card.quantity; i++) {
-          final printData = ImageProcessor.processForPrinting(card.imageBytes!);
-          final dims = ImageProcessor.getProcessedDimensions(card.imageBytes!);
+          // Small padding between cards in a deck (not the default 1cm)
+          final printData = ImageProcessor.processForPrinting(card.imageBytes!, bottomPadding: 20);
+          final dims = ImageProcessor.getProcessedDimensions(card.imageBytes!, bottomPadding: 20);
 
-          await protocol.printFullImage(
+          await printer.printFullImage(
             printData,
             ImageProcessor.defaultWidth,
             dims.height,
             density: 0.65,
-            feedLines: 20, // Small gap between cards
+            feedLines: 0, // Padding is in the image now
           );
 
           setState(() => _printedCount++);

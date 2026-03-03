@@ -6,6 +6,7 @@ import 'photo_print_screen.dart';
 import 'momir_screen.dart';
 import 'dnd_screen.dart';
 import 'deck_printer_screen.dart';
+import 'werewolf_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -124,6 +125,13 @@ class _HomeScreenState extends State<HomeScreen> {
                     color: Colors.deepOrange,
                     onTap: () => _navigateToMode('dnd'),
                   ),
+                  _ModeCard(
+                    title: 'Werewolf',
+                    subtitle: 'Party game',
+                    icon: Icons.nightlight_round,
+                    color: Colors.blueGrey,
+                    onTap: () => _navigateToMode('werewolf'),
+                  ),
                 ],
               ),
             ),
@@ -163,6 +171,12 @@ class _HomeScreenState extends State<HomeScreen> {
         Navigator.push(
           context,
           MaterialPageRoute(builder: (context) => const DndScreen()),
+        );
+        break;
+      case 'werewolf':
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const WerewolfScreen()),
         );
         break;
       case 'settings':

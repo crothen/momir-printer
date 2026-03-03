@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart' as fbp;
 import '../services/bluetooth_service.dart';
 import '../printers/phomemo_protocol.dart';
+import '../printers/cat_printer_protocol.dart';
 
 class PrinterDialog extends StatefulWidget {
   const PrinterDialog({super.key});
@@ -22,9 +23,11 @@ class _PrinterDialogState extends State<PrinterDialog> {
   final _bluetooth = BleManager();
   
   List<fbp.ScanResult> _devices = [];
+  List<fbp.ScanResult> _allDevices = [];
   bool _isScanning = false;
   bool _isConnecting = false;
   String? _connectingTo;
+  bool _showAllDevices = false;
   StreamSubscription<List<fbp.ScanResult>>? _scanSubscription;
 
   @override
@@ -61,20 +64,23 @@ class _PrinterDialogState extends State<PrinterDialog> {
 
     _scanSubscription?.cancel();
     _scanSubscription = _bluetooth.scanForDevices().listen((results) {
+      // Store all devices with names
+      final allNamed = results.where((r) => r.device.platformName.isNotEmpty).toList();
+      
       // Filter for likely thermal printers
       final printers = results.where((r) {
         final name = r.device.platformName.toLowerCase();
         return name.isNotEmpty && (
           PhomemoProtocol.matchesDevice(name) ||
+          CatPrinterProtocol.matchesDevice(name) ||
           name.contains('print') ||
           name.contains('thermal') ||
-          name.contains('pos') ||
-          name.startsWith('gt') ||
-          name.startsWith('mx')
+          name.contains('pos')
         );
       }).toList();
 
       setState(() {
+        _allDevices = allNamed;
         _devices = printers;
       });
     });
@@ -153,7 +159,7 @@ class _PrinterDialogState extends State<PrinterDialog> {
                   ],
                 ),
               )
-            : _devices.isEmpty
+            : (_devices.isEmpty && !_showAllDevices)
                 ? Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -178,32 +184,56 @@ class _PrinterDialogState extends State<PrinterDialog> {
                             'Make sure your printer is on',
                             style: Theme.of(context).textTheme.bodySmall,
                           ),
+                          if (_allDevices.isNotEmpty) ...[
+                            const SizedBox(height: 16),
+                            TextButton(
+                              onPressed: () => setState(() => _showAllDevices = true),
+                              child: Text('Show all ${_allDevices.length} devices'),
+                            ),
+                          ],
                         ],
                       ],
                     ),
                   )
-                : ListView.builder(
-                    itemCount: _devices.length,
-                    itemBuilder: (context, index) {
-                      final device = _devices[index];
-                      final name = device.device.platformName;
-                      final rssi = device.rssi;
-                      
-                      return ListTile(
-                        leading: Icon(
-                          PhomemoProtocol.matchesDevice(name)
-                              ? Icons.print
-                              : Icons.bluetooth,
-                          color: PhomemoProtocol.matchesDevice(name)
-                              ? Theme.of(context).colorScheme.primary
-                              : null,
+                : Column(
+                    children: [
+                      // Show all toggle
+                      if (_allDevices.length > _devices.length || _showAllDevices)
+                        SwitchListTile(
+                          title: const Text('Show all Bluetooth devices'),
+                          subtitle: Text('${_allDevices.length} devices found'),
+                          value: _showAllDevices,
+                          onChanged: (v) => setState(() => _showAllDevices = v),
+                          dense: true,
                         ),
-                        title: Text(name),
-                        subtitle: Text('Signal: $rssi dBm'),
-                        trailing: const Icon(Icons.chevron_right),
-                        onTap: () => _connectTo(device),
-                      );
-                    },
+                      const Divider(height: 1),
+                      Expanded(
+                        child: ListView.builder(
+                          itemCount: _showAllDevices ? _allDevices.length : _devices.length,
+                          itemBuilder: (context, index) {
+                            final device = _showAllDevices ? _allDevices[index] : _devices[index];
+                            final name = device.device.platformName;
+                            final rssi = device.rssi;
+                            final isPrinter = PhomemoProtocol.matchesDevice(name) ||
+                                CatPrinterProtocol.matchesDevice(name) ||
+                                name.toLowerCase().contains('print');
+                            
+                            return ListTile(
+                              leading: Icon(
+                                isPrinter ? Icons.print : Icons.bluetooth,
+                                color: isPrinter
+                                    ? Theme.of(context).colorScheme.primary
+                                    : null,
+                              ),
+                              title: Text(name),
+                              subtitle: Text('Signal: $rssi dBm'),
+                              trailing: const Icon(Icons.chevron_right),
+                              onTap: () => _connectTo(device),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
                   ),
       ),
       actions: [

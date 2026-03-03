@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../services/bluetooth_service.dart';
 import '../services/image_processor.dart';
-import '../printers/phomemo_protocol.dart';
+import '../printers/printer_factory.dart';
 
 class PhotoPrintScreen extends StatefulWidget {
   const PhotoPrintScreen({super.key});
@@ -275,8 +275,8 @@ class _PhotoPrintScreenState extends State<PhotoPrintScreen> {
         brightness: _brightness,
       );
       
-      final protocol = PhomemoProtocol(_bluetooth);
-      final success = await protocol.printFullImage(
+      final printer = UnifiedPrinter(_bluetooth, _bluetooth.connectedDeviceName);
+      final success = await printer.printFullImage(
         printData,
         ImageProcessor.defaultWidth,
         _printHeight,

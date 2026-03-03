@@ -12,13 +12,17 @@ class PhomemoProtocol {
   
   PhomemoProtocol(this._bluetooth);
   
-  /// Check if a device name matches Phomemo printers
+  /// Check if a device name matches Phomemo/ESC-POS printers
   static bool matchesDevice(String deviceName) {
     final name = deviceName.toLowerCase();
     return name.startsWith('t02') || 
            name.startsWith('t04') ||
            name.startsWith('m02') ||
+           name.startsWith('m03') ||
+           name.startsWith('m04') ||
+           name.startsWith('d30') ||
            name.contains('phomemo');
+    // Note: X18, GT01, GB02 etc. use cat printer protocol, not ESC/POS
   }
   
   /// Initialize the printer
@@ -40,8 +44,24 @@ class PhomemoProtocol {
   
   /// Feed paper by specified number of lines
   Future<bool> feedPaper(int lines) async {
-    // ESC d XX - Feed XX lines
-    return await _bluetooth.write(Uint8List.fromList([0x1b, 0x64, lines.clamp(0, 255)]));
+    // Try multiple feed methods for compatibility
+    final n = lines.clamp(0, 255);
+    
+    // Method 1: ESC J n - Print and feed paper n dots
+    await _bluetooth.write(Uint8List.fromList([0x1b, 0x4a, n]));
+    await Future.delayed(const Duration(milliseconds: 50));
+    
+    // Method 2: ESC d n - Feed n lines (some printers prefer this)
+    await _bluetooth.write(Uint8List.fromList([0x1b, 0x64, n]));
+    await Future.delayed(const Duration(milliseconds: 50));
+    
+    // Method 3: Send line feeds as fallback
+    if (n > 0) {
+      final lfs = List<int>.filled((n / 8).ceil(), 0x0a); // LF characters
+      await _bluetooth.write(Uint8List.fromList(lfs));
+    }
+    
+    return true;
   }
   
   /// Print a 1-bit image
@@ -84,7 +104,7 @@ class PhomemoProtocol {
   /// Print a full image with automatic initialization and paper feed
   Future<bool> printFullImage(Uint8List imageData, int width, int height, {
     double density = 0.6,
-    int feedLines = 40,
+    int feedLines = 80, // ~1cm feed after print
   }) async {
     // Initialize
     if (!await initialize()) return false;
@@ -97,9 +117,14 @@ class PhomemoProtocol {
     // Print image
     if (!await printImage(imageData, width, height)) return false;
     
+    // Wait for print to complete before feeding
+    await Future.delayed(const Duration(milliseconds: 300));
+    
     // Feed paper
-    await Future.delayed(const Duration(milliseconds: 100));
     if (!await feedPaper(feedLines)) return false;
+    
+    // Wait for feed to complete
+    await Future.delayed(const Duration(milliseconds: 200));
     
     return true;
   }

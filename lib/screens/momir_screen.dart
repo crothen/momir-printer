@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 import '../services/bluetooth_service.dart';
 import '../services/scryfall_service.dart';
 import '../services/image_processor.dart';
-import '../printers/phomemo_protocol.dart';
+import '../printers/printer_factory.dart';
 import '../models/card.dart';
 
 enum GameMode {
@@ -670,13 +670,13 @@ class _MomirScreenState extends State<MomirScreen> {
       final printData = ImageProcessor.processForPrinting(result.imageBytes!);
       final dims = ImageProcessor.getProcessedDimensions(result.imageBytes!);
       
-      final protocol = PhomemoProtocol(_bluetooth);
-      final success = await protocol.printFullImage(
+      final printer = UnifiedPrinter(_bluetooth, _bluetooth.connectedDeviceName);
+      final success = await printer.printFullImage(
         printData,
         ImageProcessor.defaultWidth,
         dims.height,
         density: 0.65,
-        feedLines: 50,
+        feedLines: 80, // ~1cm after single print
       );
 
       if (mounted) {

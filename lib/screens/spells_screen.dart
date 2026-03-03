@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../services/bluetooth_service.dart';
 import '../services/image_processor.dart';
-import '../printers/phomemo_protocol.dart';
+import '../printers/printer_factory.dart';
 
 class Spell {
   final String name;
@@ -691,13 +691,13 @@ class _SpellDetailSheetState extends State<_SpellDetailSheet> {
       final printData = ImageProcessor.processForPrinting(imageBytes);
       final dims = ImageProcessor.getProcessedDimensions(imageBytes);
 
-      final protocol = PhomemoProtocol(widget.bluetooth);
-      final success = await protocol.printFullImage(
+      final printer = UnifiedPrinter(widget.bluetooth, widget.bluetooth.connectedDeviceName);
+      final success = await printer.printFullImage(
         printData,
         ImageProcessor.defaultWidth,
         dims.height,
         density: 0.65,
-        feedLines: 50,
+        feedLines: 80,
       );
 
       if (mounted) {

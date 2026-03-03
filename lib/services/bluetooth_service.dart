@@ -88,14 +88,38 @@ class BleManager {
 
   /// Find the write characteristic for thermal printers
   fbp.BluetoothCharacteristic? _findWriteCharacteristic(List<fbp.BluetoothService> services) {
-    // Phomemo T02 uses service 0xff00, characteristic 0xff02
+    // Priority 1: Cat printer service 0xAE30, characteristic 0xAE01
+    for (final svc in services) {
+      final svcUuid = svc.uuid.toString().toLowerCase();
+      if (svcUuid.contains('ae30')) {
+        for (final char in svc.characteristics) {
+          final charUuid = char.uuid.toString().toLowerCase();
+          if (charUuid.contains('ae01') && 
+              (char.properties.write || char.properties.writeWithoutResponse)) {
+            return char;
+          }
+        }
+      }
+    }
+    
+    // Priority 2: Phomemo T02 uses service 0xff00, characteristic 0xff02
     for (final svc in services) {
       for (final char in svc.characteristics) {
-        // Check for write capability
         if (char.properties.write || char.properties.writeWithoutResponse) {
-          // Prefer known printer characteristics
           final uuid = char.uuid.toString().toLowerCase();
-          if (uuid.contains('ff02') || uuid.contains('ae01') || uuid.contains('ae02')) {
+          if (uuid.contains('ff02')) {
+            return char;
+          }
+        }
+      }
+    }
+    
+    // Priority 3: Generic printer characteristics (ae01, ae02)
+    for (final svc in services) {
+      for (final char in svc.characteristics) {
+        if (char.properties.write || char.properties.writeWithoutResponse) {
+          final uuid = char.uuid.toString().toLowerCase();
+          if (uuid.contains('ae01') || uuid.contains('ae02')) {
             return char;
           }
         }
