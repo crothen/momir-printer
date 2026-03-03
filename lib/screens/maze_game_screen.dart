@@ -30,27 +30,51 @@ enum TileShape {
 
 enum Direction { north, east, south, west }
 
-/// A secret that can appear on a tile with a game effect
-class MazeSecret {
+/// The 5 collectible icons - collect 3 of the same to win!
+class MazeIcon {
   final String emoji;
   final String name;
+
+  const MazeIcon(this.emoji, this.name);
+
+  static const diamond = MazeIcon('💎', 'Diamond');
+  static const skull = MazeIcon('💀', 'Skull');
+  static const rat = MazeIcon('🐀', 'Rat');
+  static const coin = MazeIcon('🪙', 'Coin');
+  static const eye = MazeIcon('👁️', 'Eye');
+
+  static const List<MazeIcon> all = [diamond, skull, rat, coin, eye];
+}
+
+/// A secret combines an icon (for collection) with a random effect
+class MazeSecret {
+  final MazeIcon icon;
   final String effect;
 
-  const MazeSecret(this.emoji, this.name, this.effect);
+  const MazeSecret(this.icon, this.effect);
 
-  static const List<MazeSecret> allSecrets = [
-    MazeSecret('💎', 'Gem', 'The next player can only MOVE (no mapping).'),
-    MazeSecret('🗝️', 'Key', 'Take another turn immediately.'),
-    MazeSecret('📜', 'Scroll', 'Next time you MOVE, you must MAP first.'),
-    MazeSecret('🏺', 'Artifact', 'Choose a player. Their next action must be MAP.'),
-    MazeSecret('💀', 'Skull', 'Skip your next turn.'),
-    MazeSecret('🕯️', 'Candle', 'Ignore the next ⬆ (North) on a tile you play.'),
-    MazeSecret('⚗️', 'Potion', 'Swap your next MOVE and MAP actions.'),
-    MazeSecret('🗡️', 'Sword', 'Force the previous player to take back their last tile.'),
-    MazeSecret('🛡️', 'Shield', 'Block the next effect that targets you.'),
-    MazeSecret('🔮', 'Crystal', 'Look at the top 3 tiles, put them back in any order.'),
-    MazeSecret('🪙', 'Coin', 'Draw 2 tiles, keep 1, discard the other.'),
-    MazeSecret('🧪', 'Vial', 'Your next MAP action lets you place 2 tiles.'),
+  String get emoji => icon.emoji;
+  String get name => icon.name;
+
+  /// All possible effects (randomly assigned to icons)
+  static const List<String> allEffects = [
+    'The next player can only MOVE (no mapping).',
+    'Take another turn immediately.',
+    'Next time you MOVE, you must MAP first.',
+    'Choose a player. Their next action must be MAP.',
+    'Skip your next turn.',
+    'Ignore the next ⬆ (North) on a tile you play.',
+    'Swap your next MOVE and MAP actions.',
+    'Force the previous player to take back their last tile.',
+    'Block the next effect that targets you.',
+    'Look at the top 3 tiles, put them back in any order.',
+    'Draw 2 tiles, keep 1, discard the other.',
+    'Your next MAP action lets you place 2 tiles.',
+    'Teleport to any tile with a 💀 on it.',
+    'Teleport to any tile with a 💎 on it.',
+    'Teleport to any tile with a 👁️ on it.',
+    'Steal a collected icon from another player.',
+    'Discard one of your collected icons to take 2 extra turns.',
   ];
 }
 
@@ -321,8 +345,9 @@ class _MazeGameScreenState extends State<MazeGameScreen> {
     final enabledShapes =
         _enabledShapes.entries.where((e) => e.value).map((e) => e.key).toList();
 
-    final shuffledSecrets = List<MazeSecret>.from(MazeSecret.allSecrets)..shuffle(_random);
-    int secretIndex = 0;
+    // Shuffle effects for random assignment
+    final shuffledEffects = List<String>.from(MazeSecret.allEffects)..shuffle(_random);
+    int effectIndex = 0;
 
     // First tile is always a crossroads with North indicator (start tile)
     final startTile = MazeTile(
@@ -339,11 +364,16 @@ class _MazeGameScreenState extends State<MazeGameScreen> {
       final rotation = [0, 90, 180, 270][_random.nextInt(4)];
 
       MazeSecret? secret;
-      if (_random.nextDouble() < _secretChance && secretIndex < shuffledSecrets.length) {
-        secret = shuffledSecrets[secretIndex++];
+      if (_random.nextDouble() < _secretChance) {
+        // Pick random icon from the 5 collectibles
+        final icon = MazeIcon.all[_random.nextInt(MazeIcon.all.length)];
+        // Pick next effect from shuffled list (wrap around if needed)
+        final effect = shuffledEffects[effectIndex % shuffledEffects.length];
+        effectIndex++;
+        secret = MazeSecret(icon, effect);
       }
 
-      // North indicator: 50% chance, but dead ends never have it
+      // North indicator: configurable chance, but dead ends never have it
       final hasNorth = shape != TileShape.deadEnd && _random.nextDouble() < _northChance;
       final northRot = [0, 90, 180, 270][_random.nextInt(4)];
 
@@ -616,13 +646,21 @@ class _MazeGameScreenState extends State<MazeGameScreen> {
     );
 
     // === ICON SECTION (top 1/4) ===
-    // Left half: icon
+    // Left half: big icon for collection
     final emojiStyle = ui.TextStyle(
       color: const Color(0xFF000000),
       fontSize: 60,
     );
     final emojiPara = _buildParagraph(secret.emoji, emojiStyle, width / 2 - padding);
-    canvas.drawParagraph(emojiPara, Offset(padding, iconSectionHeight / 2 - 35));
+    canvas.drawParagraph(emojiPara, Offset(padding + 20, iconSectionHeight / 2 - 35));
+
+    // Right half: "COLLECT" label
+    final collectStyle = ui.TextStyle(
+      color: const Color(0xFF666666),
+      fontSize: 14,
+    );
+    final collectPara = _buildParagraph('Add to your\ncollection!', collectStyle, width / 2 - padding, textAlign: ui.TextAlign.center);
+    canvas.drawParagraph(collectPara, Offset(width / 2 + 10, iconSectionHeight / 2 - 20));
 
     // Vertical divider in icon section
     canvas.drawLine(
@@ -639,32 +677,49 @@ class _MazeGameScreenState extends State<MazeGameScreen> {
     // === TEXT SECTION (bottom 3/4) ===
     final textY = iconSectionHeight + 30;
 
-    // Secret name
+    // Icon + name header
     final nameStyle = ui.TextStyle(
       color: const Color(0xFF000000),
-      fontSize: 28,
+      fontSize: 26,
       fontWeight: ui.FontWeight.bold,
     );
-    final namePara = _buildParagraph(secret.name, nameStyle, width - padding * 2, textAlign: ui.TextAlign.center);
+    final namePara = _buildParagraph('${secret.emoji} ${secret.name}', nameStyle, width - padding * 2, textAlign: ui.TextAlign.center);
     canvas.drawParagraph(namePara, Offset(padding, textY));
 
     // Separator
     canvas.drawLine(
-      Offset(padding, textY + 45),
-      Offset(width - padding, textY + 45),
+      Offset(padding, textY + 40),
+      Offset(width - padding, textY + 40),
       Paint()..strokeWidth = 1,
     );
+
+    // "EFFECT:" label
+    final effectLabelStyle = ui.TextStyle(
+      color: const Color(0xFF666666),
+      fontSize: 14,
+      fontWeight: ui.FontWeight.bold,
+    );
+    final effectLabelPara = _buildParagraph('EFFECT:', effectLabelStyle, width - padding * 2, textAlign: ui.TextAlign.center);
+    canvas.drawParagraph(effectLabelPara, Offset(padding, textY + 50));
 
     // Effect text
     final effectStyle = ui.TextStyle(
       color: const Color(0xFF000000),
-      fontSize: 22,
+      fontSize: 20,
     );
     final effectPara = _buildParagraph(secret.effect, effectStyle, width - padding * 2, textAlign: ui.TextAlign.center);
-    canvas.drawParagraph(effectPara, Offset(padding, textY + 60));
+    canvas.drawParagraph(effectPara, Offset(padding, textY + 75));
 
     // Second fold line (for triple fold)
     _drawFoldLine(canvas, iconSectionHeight + textSectionHeight / 2, width, '↑ FOLD ↑');
+
+    // Win reminder at bottom
+    final winStyle = ui.TextStyle(
+      color: const Color(0xFF999999),
+      fontSize: 12,
+    );
+    final winPara = _buildParagraph('🏆 3 matching icons = WIN!', winStyle, width - padding * 2, textAlign: ui.TextAlign.center);
+    canvas.drawParagraph(winPara, Offset(padding, totalHeight - 35));
 
     final picture = recorder.endRecording();
     final img = await picture.toImage(width.toInt(), totalHeight.toInt());
@@ -800,15 +855,15 @@ class _MazeGameScreenState extends State<MazeGameScreen> {
 
   /// Draw rules on the start tile
   void _drawStartTileRules(Canvas canvas, double size, Color color) {
-    // Draw a small rules box in the center
+    // Draw a rules box in the center
     final bgColor = _blackBackground ? const Color(0xFF000000) : const Color(0xFFFFFFFF);
     
     canvas.drawRect(
-      Rect.fromLTWH(size / 2 - 80, size / 2 - 50, 160, 100),
+      Rect.fromLTWH(size / 2 - 90, size / 2 - 60, 180, 120),
       Paint()..color = bgColor,
     );
     canvas.drawRect(
-      Rect.fromLTWH(size / 2 - 80, size / 2 - 50, 160, 100),
+      Rect.fromLTWH(size / 2 - 90, size / 2 - 60, 180, 120),
       Paint()
         ..color = color
         ..style = PaintingStyle.stroke
@@ -817,18 +872,23 @@ class _MazeGameScreenState extends State<MazeGameScreen> {
 
     final titleStyle = ui.TextStyle(
       color: color,
-      fontSize: 16,
+      fontSize: 14,
       fontWeight: ui.FontWeight.bold,
     );
-    final titlePara = _buildParagraph('MAZE EXPLORER', titleStyle, 150, textAlign: ui.TextAlign.center);
-    canvas.drawParagraph(titlePara, Offset(size / 2 - 75, size / 2 - 45));
+    final titlePara = _buildParagraph('MAZE EXPLORER', titleStyle, 170, textAlign: ui.TextAlign.center);
+    canvas.drawParagraph(titlePara, Offset(size / 2 - 85, size / 2 - 55));
 
     final rulesStyle = ui.TextStyle(
       color: color,
-      fontSize: 11,
+      fontSize: 10,
     );
-    final rulesPara = _buildParagraph('Actions:\n• MOVE - travel\n• MAP - place tile\n⬆ = orient North', rulesStyle, 150, textAlign: ui.TextAlign.center);
-    canvas.drawParagraph(rulesPara, Offset(size / 2 - 75, size / 2 - 25));
+    final rulesPara = _buildParagraph(
+      '🏆 Collect 3 matching icons!\n'
+      'Actions: MOVE or MAP\n'
+      '⬆ = must orient North\n'
+      '💎💀🐀🪙👁️',
+      rulesStyle, 170, textAlign: ui.TextAlign.center);
+    canvas.drawParagraph(rulesPara, Offset(size / 2 - 85, size / 2 - 35));
   }
 
   /// Draw a rugged cave-style path from center to edge
