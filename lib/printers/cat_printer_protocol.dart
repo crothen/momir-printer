@@ -48,6 +48,11 @@ class CatPrinterProtocol {
            name.contains('cat');
   }
   
+  // Protocol options
+  bool useCrc8 = true;  // Use CRC8 instead of simple sum
+  bool newFormat = false;  // Add 0x12 prefix for newer printers
+  bool lsbFirst = true;  // Bit order in packed lines
+  
   /// Build a command packet
   Uint8List _buildCommand(int cmdType, List<int> payload) {
     final len = payload.length;
@@ -61,14 +66,36 @@ class CatPrinterProtocol {
       cmdTerminator,                 // Terminator: ff
     ];
     
-    // Calculate CRC (sum of payload bytes)
-    data[data.length - 2] = _calculateCrc(payload);
+    // Calculate CRC
+    data[data.length - 2] = useCrc8 ? _calculateCrc8(payload) : _calculateCrcSum(payload);
+    
+    // Add new format prefix if needed
+    if (newFormat) {
+      return Uint8List.fromList([0x12, ...data]);
+    }
     
     return Uint8List.fromList(data);
   }
   
-  /// Calculate CRC (simple sum of bytes)
-  int _calculateCrc(List<int> data) {
+  /// Calculate CRC8 (proper CRC-8 algorithm)
+  int _calculateCrc8(List<int> data) {
+    // CRC-8 with polynomial 0x07 (standard)
+    int crc = 0;
+    for (final b in data) {
+      crc ^= b;
+      for (var i = 0; i < 8; i++) {
+        if ((crc & 0x80) != 0) {
+          crc = ((crc << 1) ^ 0x07) & 0xFF;
+        } else {
+          crc = (crc << 1) & 0xFF;
+        }
+      }
+    }
+    return crc;
+  }
+  
+  /// Calculate CRC (simple sum of bytes) - legacy mode
+  int _calculateCrcSum(List<int> data) {
     int sum = 0;
     for (final b in data) {
       sum += b;
@@ -150,9 +177,24 @@ class CatPrinterProtocol {
     return await _bluetooth.write(cmd);
   }
   
+  /// Reverse bits in a byte (for LSB first mode)
+  int _reverseBits(int byte) {
+    int result = 0;
+    for (var i = 0; i < 8; i++) {
+      if ((byte >> i) & 1 == 1) {
+        result |= 1 << (7 - i);
+      }
+    }
+    return result;
+  }
+  
   /// Print a single row (uncompressed)
   Future<bool> _printRowUncompressed(Uint8List rowData) async {
-    final cmd = _buildCommand(cmdPrintRow, rowData.toList());
+    // Convert bit order if needed
+    final data = lsbFirst 
+        ? rowData.map((b) => _reverseBits(b)).toList()
+        : rowData.toList();
+    final cmd = _buildCommand(cmdPrintRow, data);
     return await _bluetooth.write(cmd);
   }
   

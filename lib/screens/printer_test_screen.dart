@@ -25,6 +25,9 @@ class _PrinterTestScreenState extends State<PrinterTestScreen> {
   bool _useCompression = false;
   int _rowDelayMs = 5;
   bool _invertImage = false;
+  bool _useCrc8 = true;
+  bool _lsbFirst = true;
+  bool _newFormat = false;
   
   // Test patterns
   String _selectedPattern = 'gradient';
@@ -270,6 +273,12 @@ class _PrinterTestScreenState extends State<PrinterTestScreen> {
   Future<bool> _printWithCatProtocol(Uint8List imageData) async {
     final protocol = CatPrinterProtocol(_bluetooth);
     
+    // Apply protocol options
+    protocol.useCrc8 = _useCrc8;
+    protocol.lsbFirst = _lsbFirst;
+    protocol.newFormat = _newFormat;
+    
+    _addLog('Cat: Protocol - crc8=$_useCrc8, lsbFirst=$_lsbFirst, newFormat=$_newFormat');
     _addLog('Cat: Settings - energy=${(_energy * 100).round()}%, speed=0x${_speed.toRadixString(16)}, compression=$_useCompression, rowDelay=${_rowDelayMs}ms');
     
     _addLog('Cat: Setting energy ${(_energy * 100).round()}%');
@@ -518,7 +527,7 @@ class _PrinterTestScreenState extends State<PrinterTestScreen> {
                     // Invert image toggle
                     SwitchListTile(
                       title: const Text('Invert image'),
-                      subtitle: const Text('Swap black/white (test polarity)'),
+                      subtitle: const Text('Swap black/white'),
                       value: _invertImage,
                       onChanged: (v) {
                         setState(() => _invertImage = v);
@@ -526,6 +535,36 @@ class _PrinterTestScreenState extends State<PrinterTestScreen> {
                       },
                       contentPadding: EdgeInsets.zero,
                     ),
+                    
+                    // Protocol options (cat printer only)
+                    if (_selectedProtocol == PrinterType.catPrinter) ...[
+                      const Divider(),
+                      const Text('Protocol Options', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                      SwitchListTile(
+                        title: const Text('CRC8'),
+                        subtitle: const Text('Use CRC8 vs simple sum'),
+                        value: _useCrc8,
+                        onChanged: (v) => setState(() => _useCrc8 = v),
+                        contentPadding: EdgeInsets.zero,
+                        dense: true,
+                      ),
+                      SwitchListTile(
+                        title: const Text('LSB First'),
+                        subtitle: const Text('Bit order in packed lines'),
+                        value: _lsbFirst,
+                        onChanged: (v) => setState(() => _lsbFirst = v),
+                        contentPadding: EdgeInsets.zero,
+                        dense: true,
+                      ),
+                      SwitchListTile(
+                        title: const Text('New Format'),
+                        subtitle: const Text('Add 0x12 prefix'),
+                        value: _newFormat,
+                        onChanged: (v) => setState(() => _newFormat = v),
+                        contentPadding: EdgeInsets.zero,
+                        dense: true,
+                      ),
+                    ],
                   ],
                 ),
               ),
