@@ -215,14 +215,17 @@ class BleManager {
     if (_writeCharacteristic == null) return false;
     
     try {
+      // Use write-with-response if supported, otherwise write-without-response
+      final useWithoutResponse = _writeCharacteristic!.properties.writeWithoutResponse;
+      
       // Split into chunks if needed (BLE has MTU limits)
-      const chunkSize = 180; // Safe chunk size for most devices
+      const chunkSize = 120; // Smaller chunks for reliability
       
       for (var i = 0; i < data.length; i += chunkSize) {
         final end = (i + chunkSize > data.length) ? data.length : i + chunkSize;
         final chunk = data.sublist(i, end);
         
-        await _writeCharacteristic!.write(chunk, withoutResponse: true);
+        await _writeCharacteristic!.write(chunk, withoutResponse: useWithoutResponse);
         
         // Small delay between chunks
         if (end < data.length) {
