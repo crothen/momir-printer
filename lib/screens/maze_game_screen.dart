@@ -118,8 +118,7 @@ class _MazeGameScreenState extends State<MazeGameScreen> {
   final _random = Random();
 
   // Settings
-  int _tileCount = 9;
-  double _secretChance = 0.3;
+  double _secretChance = 0.4;
   double _northChance = 0.5;
   bool _demoMode = false;
   bool _blackBackground = true;
@@ -220,6 +219,15 @@ class _MazeGameScreenState extends State<MazeGameScreen> {
                 ),
               ),
             ),
+            
+            const SizedBox(height: 16),
+            
+            // Settings button
+            TextButton.icon(
+              onPressed: _showSettings,
+              icon: const Icon(Icons.settings, size: 20),
+              label: const Text('Settings'),
+            ),
           ],
         ),
       ),
@@ -249,6 +257,78 @@ class _MazeGameScreenState extends State<MazeGameScreen> {
       _tilesPrinted = 0;
       _currentTile = null;
     });
+  }
+
+  void _showSettings() {
+    showModalBottomSheet(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setModalState) => Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Game Settings', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 24),
+              
+              // Secret chance
+              Text('Secret Chance: ${(_secretChance * 100).round()}%'),
+              Slider(
+                value: _secretChance,
+                min: 0,
+                max: 1,
+                divisions: 10,
+                label: '${(_secretChance * 100).round()}%',
+                onChanged: (v) {
+                  setModalState(() => _secretChance = v);
+                  setState(() => _secretChance = v);
+                },
+              ),
+              
+              const SizedBox(height: 16),
+              
+              // North chance
+              Text('North Indicator Chance: ${(_northChance * 100).round()}%'),
+              Slider(
+                value: _northChance,
+                min: 0,
+                max: 1,
+                divisions: 10,
+                label: '${(_northChance * 100).round()}%',
+                onChanged: (v) {
+                  setModalState(() => _northChance = v);
+                  setState(() => _northChance = v);
+                },
+              ),
+              
+              const SizedBox(height: 16),
+              
+              // Black background toggle
+              SwitchListTile(
+                title: const Text('Cave Style (Black Background)'),
+                value: _blackBackground,
+                onChanged: (v) {
+                  setModalState(() => _blackBackground = v);
+                  setState(() => _blackBackground = v);
+                },
+                contentPadding: EdgeInsets.zero,
+              ),
+              
+              const SizedBox(height: 16),
+              
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('Done'),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   /// Generate a random tile on demand
