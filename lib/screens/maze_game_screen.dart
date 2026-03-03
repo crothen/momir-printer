@@ -528,14 +528,17 @@ class _MazeGameScreenState extends State<MazeGameScreen> {
     final recorder = ui.PictureRecorder();
     final canvas = Canvas(recorder, Rect.fromLTWH(0, 0, size, size));
 
-    final bgColor = _blackBackground ? const Color(0xFF000000) : const Color(0xFFFFFFFF);
     final pathColor = _blackBackground ? const Color(0xFFFFFFFF) : const Color(0xFF000000);
 
-    // Fill background
-    canvas.drawRect(
-      Rect.fromLTWH(0, 0, size, size),
-      Paint()..color = bgColor,
-    );
+    // Fill background - use dithered pattern for black to reduce printer heat
+    if (_blackBackground) {
+      _drawDitheredBackground(canvas, size);
+    } else {
+      canvas.drawRect(
+        Rect.fromLTWH(0, 0, size, size),
+        Paint()..color = const Color(0xFFFFFFFF),
+      );
+    }
 
     // Draw rugged cave paths
     final pathPaint = Paint()
@@ -741,6 +744,30 @@ class _MazeGameScreenState extends State<MazeGameScreen> {
       path.lineTo(corner.dx - markerSize / 2, corner.dy + markerSize / 2);
       path.close();
       canvas.drawPath(path, paint);
+    }
+  }
+
+  /// Draw a 50% dithered background to reduce printer heat
+  void _drawDitheredBackground(Canvas canvas, double size) {
+    final paint = Paint()
+      ..color = const Color(0xFF000000)
+      ..style = PaintingStyle.fill;
+
+    // Checkerboard pattern - 50% coverage, 2x2 pixel blocks for visibility
+    const blockSize = 2.0;
+    
+    for (double y = 0; y < size; y += blockSize * 2) {
+      for (double x = 0; x < size; x += blockSize * 2) {
+        // Draw two diagonal blocks per 4x4 cell
+        canvas.drawRect(
+          Rect.fromLTWH(x, y, blockSize, blockSize),
+          paint,
+        );
+        canvas.drawRect(
+          Rect.fromLTWH(x + blockSize, y + blockSize, blockSize, blockSize),
+          paint,
+        );
+      }
     }
   }
 
