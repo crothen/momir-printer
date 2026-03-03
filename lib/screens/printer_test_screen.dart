@@ -24,6 +24,7 @@ class _PrinterTestScreenState extends State<PrinterTestScreen> {
   int _feedLines = 80;
   bool _useCompression = false;
   int _rowDelayMs = 5;
+  int _phomemoDelayMs = 10; // Delay between line batches for Phomemo
   bool _invertImage = false;
   bool _useCrc8 = true;
   bool _lsbFirst = true;
@@ -40,7 +41,7 @@ class _PrinterTestScreenState extends State<PrinterTestScreen> {
   // Preview
   Uint8List? _previewData;
   int _previewWidth = 384;
-  int _previewHeight = 100;
+  int _previewHeight = 300; // Bigger for better speed testing
 
   @override
   void initState() {
@@ -336,8 +337,8 @@ class _PrinterTestScreenState extends State<PrinterTestScreen> {
     }
     await Future.delayed(const Duration(milliseconds: 50));
     
-    _addLog('Phomemo: Printing $_previewHeight rows...');
-    if (!await protocol.printImage(imageData, _previewWidth, _previewHeight)) {
+    _addLog('Phomemo: Printing $_previewHeight rows (delay=${_phomemoDelayMs}ms)...');
+    if (!await protocol.printImage(imageData, _previewWidth, _previewHeight, lineDelayMs: _phomemoDelayMs)) {
       _addLog('Phomemo: printImage failed');
       return false;
     }
@@ -511,6 +512,25 @@ class _PrinterTestScreenState extends State<PrinterTestScreen> {
                             ),
                           ),
                           SizedBox(width: 50, child: Text('${_rowDelayMs}ms')),
+                        ],
+                      ),
+                    
+                    // Line delay (phomemo)
+                    if (_selectedProtocol == PrinterType.phomemo)
+                      Row(
+                        children: [
+                          const SizedBox(width: 80, child: Text('Line delay:')),
+                          Expanded(
+                            child: Slider(
+                              value: _phomemoDelayMs.toDouble(),
+                              min: 0,
+                              max: 100,
+                              divisions: 20,
+                              label: '$_phomemoDelayMs ms',
+                              onChanged: (v) => setState(() => _phomemoDelayMs = v.round()),
+                            ),
+                          ),
+                          SizedBox(width: 50, child: Text('${_phomemoDelayMs}ms')),
                         ],
                       ),
                     

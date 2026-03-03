@@ -68,7 +68,8 @@ class PhomemoProtocol {
   /// [imageData] - packed bytes, MSB first, black=1
   /// [width] - pixels per line (should be 384)
   /// [height] - number of lines
-  Future<bool> printImage(Uint8List imageData, int width, int height) async {
+  /// [lineDelayMs] - delay between line batches (higher = slower but cooler)
+  Future<bool> printImage(Uint8List imageData, int width, int height, {int lineDelayMs = 10}) async {
     final bytesPerLine = (width + 7) ~/ 8;
     
     // Process line by line
@@ -92,9 +93,9 @@ class PhomemoProtocol {
       final success = await _bluetooth.write(Uint8List.fromList(command));
       if (!success) return false;
       
-      // Throttle to prevent buffer overflow
-      if (y % 8 == 0) {
-        await Future.delayed(const Duration(milliseconds: 10));
+      // Throttle to prevent buffer overflow and reduce heat
+      if (y % 8 == 0 && lineDelayMs > 0) {
+        await Future.delayed(Duration(milliseconds: lineDelayMs));
       }
     }
     
