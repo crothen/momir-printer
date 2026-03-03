@@ -258,7 +258,7 @@ class _MazeGameScreenState extends State<MazeGameScreen> {
         shape: TileShape.crossroads,
         rotation: 0,
         hasNorthIndicator: true,
-        northRotation: [0, 90, 180, 270][_random.nextInt(4)],
+        northRotation: 0, // North is always up on start tile
         isStartTile: true,
       );
     }
