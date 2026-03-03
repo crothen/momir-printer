@@ -78,9 +78,22 @@ class CatPrinterProtocol {
   
   /// Initialize the printer
   Future<bool> initialize() async {
-    // Get device status
+    // Command 0xA8 - Update device / wake up
+    final wakeCmd = _buildCommand(0xa8, [0x00]);
+    if (!await _bluetooth.write(wakeCmd)) return false;
+    await Future.delayed(const Duration(milliseconds: 50));
+    
+    // Command 0xA3 - Get status
     final statusCmd = _buildCommand(cmdGetStatus, [0x00]);
-    return await _bluetooth.write(statusCmd);
+    if (!await _bluetooth.write(statusCmd)) return false;
+    await Future.delayed(const Duration(milliseconds: 50));
+    
+    // Command 0xBB - Set print mode (0x01 = text mode, 0x00 = image mode)
+    // The second byte might be quality/energy related
+    final modeCmd = _buildCommand(0xbb, [0x01, 0x07]);
+    if (!await _bluetooth.write(modeCmd)) return false;
+    
+    return true;
   }
   
   /// Set print energy/density (0.0 - 1.0)
