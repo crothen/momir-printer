@@ -61,7 +61,6 @@ class MazeSecret {
     'The next player can only MOVE (no mapping).',
     'Take an extra action immediately.',
     'Choose a player. Their next action must be MAP.',
-    'Skip your next action.',
     'Ignore the next ⬆ (North) on a tile you play.',
     'Your next MAP action lets you place 2 tiles.',
     'Teleport to any tile with a 💀 on it.',
@@ -813,7 +812,7 @@ class _MazeGameScreenState extends State<MazeGameScreen> {
     final secretHeader = _buildParagraph('SECRETS', headerStyle, width - padding * 2);
     canvas.drawParagraph(secretHeader, Offset(padding, y));
     y += 25;
-    final secretBody = _buildParagraph('When you land on a secret, read the effect aloud and do it. Then add the icon to your collection.', bodyStyle, width - padding * 2);
+    final secretBody = _buildParagraph('When you land on a secret, take the card. Use it any time! Once used, add the icon to your collection.', bodyStyle, width - padding * 2);
     canvas.drawParagraph(secretBody, Offset(padding, y));
 
     final picture = recorder.endRecording();
